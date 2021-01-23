@@ -23,9 +23,9 @@ end
 
 nm.search_tag = function(tag)
   print(tag)
-	local buf = v.nvim_create_buf(false, true)
-	v.nvim_buf_set_name(buf, "Threads")
-	--v.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
+  local buf = v.nvim_create_buf(false, true)
+  v.nvim_buf_set_name(buf, "Threads")
+  --v.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
   v.nvim_win_set_buf(0, buf)
   local out = split(capture("notmuch search tag:" .. tag))
   v.nvim_buf_set_lines(0, 0, 0, true, out)
