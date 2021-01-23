@@ -1,32 +1,16 @@
 local nm = {}
 local v = vim.api
 local f = require'notmuch.float'
+local u = require'notmuch.util'
 
 local buf_stack = {}
-
-local function capture(cmd)
-  local f = assert(io.popen(cmd, 'r'))
-  local out = assert(f:read('*a')) -- *a means all content of pipe/file
-  f:close()
-  return out
-end
-
-local function split(s)
-  local lines = {}
-  local i = 1
-  for entry in string.gmatch(s, "%C+") do
-    lines[i] = entry
-    i = i + 1
-  end
-  return lines
-end
 
 nm.show_all_tags = function()
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, "Tags")
   v.nvim_win_set_buf(0, buf)
-  local tags = capture("notmuch search --output=tags '*'")
-  v.nvim_buf_set_lines(0, 0, 0, true, split(tags))
+  local tags = u.capture("notmuch search --output=tags '*'")
+  v.nvim_buf_set_lines(0, 0, 0, true, u.split(tags))
   v.nvim_input("gg")
   v.nvim_del_current_line()
   vim.bo.filetype = "notmuch-hello"
@@ -38,8 +22,8 @@ nm.show_tag = function(tag)
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, tag)
   v.nvim_win_set_buf(0, buf)
-  local out = capture("notmuch search tag:" .. tag)
-  v.nvim_buf_set_lines(0, 0, 0, true, split(out))
+  local out = u.capture("notmuch search tag:" .. tag)
+  v.nvim_buf_set_lines(0, 0, 0, true, u.split(out))
   vim.bo.filetype = "notmuch-threads"
   v.nvim_del_current_line()
   v.nvim_input("gg")
@@ -50,7 +34,7 @@ nm.search_terms = function(search)
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, search)
   v.nvim_win_set_buf(0, buf)
-  local out = split(capture("notmuch search " .. search))
+  local out = u.split(u.capture("notmuch search " .. search))
   v.nvim_buf_set_lines(0, 0, 0, true, out)
   vim.bo.filetype = "notmuch-threads"
   v.nvim_del_current_line()
@@ -62,9 +46,9 @@ end
 nm.show_thread = function()
   local line = v.nvim_get_current_line()
   local threadid = string.match(line, "[0-9a-z]+", 7)
-  local text = capture("notmuch show --format=text thread:" .. threadid)
+  local text = u.capture("notmuch show --format=text thread:" .. threadid)
   local float = f.open_floating_window()
-  v.nvim_buf_set_lines(0, 0, 0, true, split(text))
+  v.nvim_buf_set_lines(0, 0, 0, true, u.split(text))
   vim.bo.filetype="mail"
   v.nvim_input("gg")
 end
