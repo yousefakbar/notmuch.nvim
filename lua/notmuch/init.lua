@@ -21,13 +21,36 @@ local function split(s)
   return lines
 end
 
-nm.search_tag = function(tag)
-  print(tag)
-  local buf = v.nvim_create_buf(false, true)
-  v.nvim_buf_set_name(buf, "Threads")
-  --v.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
+nm.show_all_tags = function()
+  local buf = v.nvim_create_buf(true, true)
+  v.nvim_buf_set_name(buf, "Tags")
   v.nvim_win_set_buf(0, buf)
-  local out = split(capture("notmuch search tag:" .. tag))
+  local tags = capture("notmuch search --output=tags '*'")
+  v.nvim_buf_set_lines(0, 0, 0, true, split(tags))
+  v.nvim_input("gg")
+  v.nvim_del_current_line()
+  vim.bo.filetype = "notmuch-hello"
+  print("Welcome to Notmuch.nvim! Choose a tag to search it.")
+end
+
+nm.show_tag = function(tag)
+  if tag == '' then return nil end
+  local buf = v.nvim_create_buf(true, true)
+  v.nvim_buf_set_name(buf, tag)
+  v.nvim_win_set_buf(0, buf)
+  local out = capture("notmuch search tag:" .. tag)
+  v.nvim_buf_set_lines(0, 0, 0, true, split(out))
+  vim.bo.filetype = "notmuch-threads"
+  v.nvim_del_current_line()
+  v.nvim_input("gg")
+end
+
+nm.search_terms = function(search)
+  if search == '' then return nil end
+  local buf = v.nvim_create_buf(true, true)
+  v.nvim_buf_set_name(buf, search)
+  v.nvim_win_set_buf(0, buf)
+  local out = split(capture("notmuch search " .. search))
   v.nvim_buf_set_lines(0, 0, 0, true, out)
   vim.bo.filetype = "notmuch-threads"
   v.nvim_del_current_line()

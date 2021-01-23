@@ -1,2 +1,3 @@
 let nm = v:lua.require('notmuch')
-command -nargs=* NmSearchTag :call nm.search_tag("<args>")
+command Notmuch :call nm.show_all_tags()
+command -nargs=* NotmuchSearch :call nm.search_terms("<args>")
