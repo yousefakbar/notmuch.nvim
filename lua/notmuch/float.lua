@@ -3,7 +3,6 @@ local v = vim.api
 
 local function open_floating_window_border(win_width, win_height, row, col)
 	local border_buf = v.nvim_create_buf(false, true)
-	v.nvim_buf_set_name(border_buf, "YScratchBorder")
 	v.nvim_buf_set_option(border_buf, 'bufhidden', 'wipe')
 	local border_opts = {
 		style = "minimal",
@@ -28,7 +27,6 @@ end
 -- opens a floating scratch buffer
 float.open_floating_window = function()
 	local buf = v.nvim_create_buf(false, true)
-	v.nvim_buf_set_name(buf, "YScratch")
 	v.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
 	local max_width  = v.nvim_get_option("columns")
 	local max_height = v.nvim_get_option("lines")
