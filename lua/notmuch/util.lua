@@ -1,5 +1,11 @@
 local u = {}
 
+u.print_table = function(tab)
+  for k,v in pairs(tab) do
+    print(v)
+  end
+end
+
 u.capture = function(cmd)
   local f = assert(io.popen(cmd, 'r'))
   local out = assert(f:read('*a')) -- *a means all content of pipe/file
