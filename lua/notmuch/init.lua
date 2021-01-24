@@ -1,6 +1,7 @@
 local nm = {}
 local v = vim.api
 local f = require'notmuch.float'
+local m = require'notmuch.msg'
 local u = require'notmuch.util'
 
 local buf_stack = {}
@@ -49,12 +50,13 @@ end
 nm.show_thread = function()
   local line = v.nvim_get_current_line()
   local threadid = string.match(line, "[0-9a-z]+", 7)
-  local text = u.capture("notmuch show --format=text thread:" .. threadid)
+  local text = u.capture("notmuch show thread:" .. threadid .. "| sed 's///g'")
   local float = f.open_floating_window()
   v.nvim_buf_set_lines(0, 0, 0, true, u.split(text))
   vim.bo.filetype="mail"
   vim.bo.modifiable = false
   v.nvim_input("gg")
+  --m.parse_msg(text) -- needs text to be u.split()
 end
 
 return nm
