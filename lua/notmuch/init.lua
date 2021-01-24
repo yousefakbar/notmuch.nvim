@@ -14,6 +14,7 @@ nm.show_all_tags = function()
   v.nvim_input("gg")
   v.nvim_del_current_line()
   vim.bo.filetype = "notmuch-hello"
+  vim.bo.modifiable = false
   print("Welcome to Notmuch.nvim! Choose a tag to search it.")
 end
 
@@ -26,6 +27,7 @@ nm.show_tag = function(tag)
   v.nvim_buf_set_lines(0, 0, 0, true, u.split(out))
   vim.bo.filetype = "notmuch-threads"
   v.nvim_del_current_line()
+  vim.bo.modifiable = false
   v.nvim_input("gg")
 end
 
@@ -38,6 +40,7 @@ nm.search_terms = function(search)
   v.nvim_buf_set_lines(0, 0, 0, true, out)
   vim.bo.filetype = "notmuch-threads"
   v.nvim_del_current_line()
+  vim.bo.modifiable = false
   v.nvim_input("gg")
 end
 
@@ -50,6 +53,7 @@ nm.show_thread = function()
   local float = f.open_floating_window()
   v.nvim_buf_set_lines(0, 0, 0, true, u.split(text))
   vim.bo.filetype="mail"
+  vim.bo.modifiable = false
   v.nvim_input("gg")
 end
 
