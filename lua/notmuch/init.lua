@@ -1,8 +1,47 @@
 local nm = {}
 local v = vim.api
-local f = require'notmuch.float'
-local m = require'notmuch.msg'
 local u = require'notmuch.util'
+
+local function indent_depth(buf, lineno, depth)
+  local line = vim.fn.getline(lineno)
+  local s = ''
+  for i=0,depth-1 do s = '────' .. s end
+  v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { s .. line })
+end
+
+local function process_msgs_in_thread(buf)
+  local msg = {}
+  local lineno = 1
+  local last = vim.fn.line('$')
+  while lineno <= last do
+    local line = vim.fn.getline(lineno)
+    if string.match(line, "^message{") ~= nil then
+      msg.id = string.match(line, 'id:%S+')
+      msg.depth = tonumber(string.match(string.match(line, 'depth:%d+'), '%d+'))
+      msg.filename = string.match(line, 'filename:%C+')
+      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, {})
+      lineno = lineno - 1
+      last = last - 1
+    elseif string.match(line, '^header{') ~= nil then
+      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, {})
+      indent_depth(buf, lineno, msg.depth)
+      line = vim.fn.getline(lineno)
+      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { line, msg.id .. ' {{{' })
+    elseif string.match(line, '^Subject:') ~= nil then
+      lineno = lineno + 2
+      last = last + 1
+    elseif string.match(line, '^message}') ~= nil then
+      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { '}}}', '' })
+      lineno = lineno + 1
+      last = last + 1
+    elseif string.match(line, '^%a+[{}]') ~= nil then
+      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, {})
+      lineno = lineno - 1
+      last = last - 1
+    end
+    lineno = lineno + 1
+  end
+end
 
 nm.show_all_tags = function()
   local buf = v.nvim_create_buf(true, true)
@@ -40,19 +79,17 @@ nm.search_terms = function(search)
   vim.bo.modifiable = false
 end
 
--- TODO: implement folding for each message in a thread
--- User presses <CR> on a thread, pass the line to this function
 nm.show_thread = function()
   local line = v.nvim_get_current_line()
   local threadid = string.match(line, "[0-9a-z]+", 7)
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, "thread:" .. threadid)
   v.nvim_win_set_buf(0, buf)
-  v.nvim_command("0read! notmuch show thread:" .. threadid .. " | sed 's///g'")
-  v.nvim_command('silent %s/message}//')
-  v.nvim_command('silent g/^[a-z]\\+[{}]/d')
+  v.nvim_command("silent 0read! notmuch show --exclude=false thread:" .. threadid .. " | sed 's///g'")
+  process_msgs_in_thread()
   v.nvim_win_set_cursor(0, { 1, 0})
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
+  --vim.wo.foldmethod="marker"
   vim.bo.filetype="mail"
   vim.bo.modifiable = false
 end
