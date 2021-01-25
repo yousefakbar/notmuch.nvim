@@ -22,7 +22,7 @@ end
 nm.show_tag = function(tag)
   if tag == '' then return nil end
   local buf = v.nvim_create_buf(true, true)
-  v.nvim_buf_set_name(buf, tag)
+  v.nvim_buf_set_name(buf, "tag:" .. tag)
   v.nvim_win_set_buf(0, buf)
   local out = u.capture("notmuch search tag:" .. tag)
   v.nvim_buf_set_lines(0, 0, 0, true, u.split(out))
@@ -64,4 +64,4 @@ end
 
 return nm
 
--- vim: tabstop=2:shiftwidth=2:expandtab
+-- vim: tabstop=2:shiftwidth=2:expandtab:foldmethod=indent
