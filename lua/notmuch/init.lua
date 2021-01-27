@@ -2,6 +2,9 @@ local nm = {}
 local v = vim.api
 local u = require'notmuch.util'
 
+local default_cmd = 'mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a'
+if vim.g.NotmuchMaildirSyncCmd == nil then vim.g.NotmuchMaildirSyncCmd = default_cmd end
+
 local function indent_depth(buf, lineno, depth)
   local line = vim.fn.getline(lineno)
   local s = ''
@@ -30,6 +33,8 @@ local function process_msgs_in_thread(buf)
     elseif string.match(line, '^Subject:') ~= nil then
       lineno = lineno + 2
       last = last + 1
+    elseif string.match(line, '^header}') ~= nil then
+      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { '' })
     elseif string.match(line, '^message}') ~= nil then
       v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { '}}}', '' })
       lineno = lineno + 1
@@ -89,7 +94,6 @@ nm.show_thread = function()
   process_msgs_in_thread()
   v.nvim_win_set_cursor(0, { 1, 0})
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
-  --vim.wo.foldmethod="marker"
   vim.bo.filetype="mail"
   vim.bo.modifiable = false
 end
