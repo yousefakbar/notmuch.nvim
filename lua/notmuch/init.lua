@@ -1,6 +1,5 @@
 local nm = {}
 local v = vim.api
-local u = require'notmuch.util'
 
 local default_cmd = 'mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a'
 if vim.g.NotmuchMaildirSyncCmd == nil then vim.g.NotmuchMaildirSyncCmd = default_cmd end
@@ -48,7 +47,7 @@ local function process_msgs_in_thread(buf)
   end
 end
 
-nm.show_all_tags = function()
+local function show_all_tags()
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, "Tags")
   v.nvim_win_set_buf(0, buf)
@@ -57,11 +56,15 @@ nm.show_all_tags = function()
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
   vim.bo.filetype = "notmuch-hello"
   vim.bo.modifiable = false
-  print("Welcome to Notmuch.nvim! Choose a tag to search it.")
 end
 
 nm.show_tag = function(tag)
   if tag == '' then return nil end
+  local bufno = vim.fn.bufnr('tag:' .. tag)
+  if bufno ~= -1 then
+    v.nvim_win_set_buf(0, bufno)
+    return true
+  end
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, "tag:" .. tag)
   v.nvim_win_set_buf(0, buf)
@@ -73,7 +76,16 @@ nm.show_tag = function(tag)
 end
 
 nm.search_terms = function(search)
-  if search == '' then return nil end
+  if search == '' then
+    return nil
+  elseif string.match(search, '^thread:%S+$') ~= nil then
+    nm.show_thread(search)
+  end
+  local bufno = vim.fn.bufnr(search)
+  if bufno ~= -1 then
+    v.nvim_win_set_buf(0, bufno)
+    return true
+  end
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, search)
   v.nvim_win_set_buf(0, buf)
@@ -84,9 +96,19 @@ nm.search_terms = function(search)
   vim.bo.modifiable = false
 end
 
-nm.show_thread = function()
-  local line = v.nvim_get_current_line()
-  local threadid = string.match(line, "[0-9a-z]+", 7)
+nm.show_thread = function(s)
+  local threadid = ''
+  if s == nil then
+    local line = v.nvim_get_current_line()
+    threadid = string.match(line, "[0-9a-z]+", 7)
+  else
+    threadid = string.match(s, "[0-9a-z]+", 7)
+  end
+  local bufno = vim.fn.bufnr('thread:' .. threadid)
+  if bufno ~= -1 then
+    v.nvim_win_set_buf(0, bufno)
+    return true
+  end
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, "thread:" .. threadid)
   v.nvim_win_set_buf(0, buf)
@@ -96,6 +118,28 @@ nm.show_thread = function()
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
   vim.bo.filetype="mail"
   vim.bo.modifiable = false
+end
+
+nm.refresh_search_buffer = function()
+  local search = string.match(v.nvim_buf_get_name(0), '%a+:%C+')
+  v.nvim_command('bwipeout')
+  nm.search_terms(search)
+end
+
+nm.refresh_thread_buffer = function()
+  local thread = string.match(v.nvim_buf_get_name(0), 'thread:%C+')
+  v.nvim_command('bwipeout')
+  nm.show_thread(thread)
+end
+
+nm.notmuch_hello = function()
+  local bufno = vim.fn.bufnr('Tags')
+  if bufno ~= -1 then
+    v.nvim_win_set_buf(0, bufno)
+  else
+    show_all_tags()
+  end
+  print("Welcome to Notmuch.nvim! Choose a tag to search it.")
 end
 
 return nm
