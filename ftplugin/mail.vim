@@ -1,5 +1,6 @@
 set foldmethod=marker
 
+nmap <buffer> <silent> U :call v:lua.require('notmuch.attach').get_urls_from_cursor_msg()<CR>
 nmap <buffer> <silent> <Tab> zj
 nmap <buffer> <silent> <S-Tab> zk
 nmap <buffer> <silent> <Enter> za

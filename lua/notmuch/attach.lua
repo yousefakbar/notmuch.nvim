@@ -69,6 +69,12 @@ a.get_attachments_from_cursor_msg = function()
   vim.bo.modifiable = false
 end
 
+a.get_urls_from_cursor_msg = function()
+  local id = find_cursor_msg_id()
+  if id == nil then return nil end
+  v.nvim_command('YT "notmuch show id:' .. id .. ' | urlextract"')
+end
+
 return a
 
 -- vim: tabstop=2:shiftwidth=2:expandtab:foldmethod=indent
