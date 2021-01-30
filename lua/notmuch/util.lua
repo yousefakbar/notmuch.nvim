@@ -13,16 +13,16 @@ u.capture = function(cmd)
   return out
 end
 
-u.split = function(s)
-  local lines = {}
+u.split = function(s, delim)
+  local out = {}
   local i = 1
-  for entry in string.gmatch(s, "%C+") do
-    lines[i] = entry
+  for entry in string.gmatch(s, delim) do
+    out[i] = entry
     i = i + 1
   end
-  return lines
+  return out
 end
 
 return u
 
--- vim: tabstop=2:shiftwidth=2:expandtab
+-- vim: tabstop=2:shiftwidth=2:expandtab:foldmethod=indent
