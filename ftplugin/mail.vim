@@ -1,8 +1,9 @@
 set foldmethod=marker
 
 command -buffer -complete=custom,notmuch#CompTags -nargs=+ TagAdd :call v:lua.require('notmuch.tag').msg_add_tag("<args>")
-command -buffer -complete=custom,notmuch#CompTags -nargs=+ TagRm :call v:lua.require('notmuch.tag').msg_rm_tag("<args>")
+command -buffer -complete=custom,notmuch#CompTags -nargs=+ TagRm tag.msg_rm_tag("<args>")
 command -buffer -complete=custom,notmuch#CompTags -nargs=+ TagToggle :call tag.msg_toggle_tag("<args>")
+command -buffer FollowPatch :call v:lua.require('notmuch.attach').follow_github_patch(getline('.'))
 
 nmap <buffer> <silent> U :call v:lua.require('notmuch.attach').get_urls_from_cursor_msg()<CR>
 nmap <buffer> <silent> <Tab> zj
