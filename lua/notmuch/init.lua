@@ -48,31 +48,16 @@ local function process_msgs_in_thread(buf)
 end
 
 local function show_all_tags()
+  local db = require'notmuch.cnotmuch'('/Users/Yousef/Mail', 0)
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, "Tags")
   v.nvim_win_set_buf(0, buf)
-  v.nvim_command("silent 0read! notmuch search --output=tags '*'")
+  v.nvim_buf_set_lines(buf, 0, 0, true, db.get_all_tags())
   v.nvim_win_set_cursor(0, { 1, 0})
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
   vim.bo.filetype = "notmuch-hello"
   vim.bo.modifiable = false
-end
-
-nm.show_tag = function(tag)
-  if tag == '' then return nil end
-  local bufno = vim.fn.bufnr('tag:' .. tag)
-  if bufno ~= -1 then
-    v.nvim_win_set_buf(0, bufno)
-    return true
-  end
-  local buf = v.nvim_create_buf(true, true)
-  v.nvim_buf_set_name(buf, "tag:" .. tag)
-  v.nvim_win_set_buf(0, buf)
-  v.nvim_command("silent 0read! notmuch search tag:" .. tag)
-  v.nvim_win_set_cursor(0, { 1, 0})
-  v.nvim_buf_set_lines(buf, -2, -1, true, {})
-  vim.bo.filetype = "notmuch-threads"
-  vim.bo.modifiable = false
+  db.close()
 end
 
 nm.search_terms = function(search)
@@ -80,6 +65,7 @@ nm.search_terms = function(search)
     return nil
   elseif string.match(search, '^thread:%S+$') ~= nil then
     nm.show_thread(search)
+    return true
   end
   local bufno = vim.fn.bufnr(search)
   if bufno ~= -1 then
@@ -89,6 +75,7 @@ nm.search_terms = function(search)
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, search)
   v.nvim_win_set_buf(0, buf)
+  nm.count_search_term(search)
   v.nvim_command("silent 0read! notmuch search " .. search)
   v.nvim_win_set_cursor(0, { 1, 0})
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
@@ -140,6 +127,14 @@ nm.notmuch_hello = function()
     show_all_tags()
   end
   print("Welcome to Notmuch.nvim! Choose a tag to search it.")
+end
+
+nm.count_search_term = function(search)
+  local db = require'notmuch.cnotmuch'('/Users/Yousef/Mail', 0)
+  local query = db.create_query(search .. ' and not tag:spam')
+  local count = query.count_threads()
+  print('Found ' .. count .. ' threads')
+  db.close()
 end
 
 return nm
