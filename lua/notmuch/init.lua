@@ -73,11 +73,11 @@ nm.search_terms = function(search)
     return true
   end
   local buf = v.nvim_create_buf(true, true)
+  nm.count_search_term(search)
   v.nvim_buf_set_name(buf, search)
   v.nvim_win_set_buf(0, buf)
-  nm.count_search_term(search)
   v.nvim_command("silent 0read! notmuch search " .. search)
-  v.nvim_win_set_cursor(0, { 1, 0})
+  v.nvim_win_set_cursor(0, { 1, 0 })
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
   vim.bo.filetype = "notmuch-threads"
   vim.bo.modifiable = false

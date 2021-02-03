@@ -22,7 +22,7 @@ local c = {}
 local ffi = require("ffi")
 local nm = ffi.load("notmuch")
 
-local c_head = [[
+ffi.cdef[[
   typedef struct _notmuch_database notmuch_database_t;
   typedef struct {} notmuch_query_t;
   typedef struct {} notmuch_messages_t;
@@ -97,6 +97,9 @@ local c_head = [[
   const char *
   notmuch_thread_get_thread_id (notmuch_thread_t *thread);
 
+  const char *
+  notmuch_thread_get_subject (notmuch_thread_t *thread);
+
   void
   notmuch_query_destroy (notmuch_query_t *query);
 
@@ -127,8 +130,6 @@ local c_head = [[
   notmuch_status_t
   notmuch_message_remove_all_tags (notmuch_message_t *message);
 ]]
-
-ffi.cdef(c_head)
 
 -- Opens a Notmuch database. Entry point into the api.
 --
