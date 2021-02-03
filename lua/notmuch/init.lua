@@ -119,6 +119,11 @@ nm.refresh_thread_buffer = function()
   nm.show_thread(thread)
 end
 
+nm.refresh_hello_buffer = function()
+  v.nvim_command('bwipeout')
+  show_all_tags()
+end
+
 nm.notmuch_hello = function()
   local bufno = vim.fn.bufnr('Tags')
   if bufno ~= -1 then
