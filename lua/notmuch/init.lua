@@ -102,7 +102,7 @@ nm.show_thread = function(s)
   v.nvim_command("silent 0read! notmuch show --exclude=false thread:" .. threadid .. " | sed 's///g'")
   process_msgs_in_thread()
   v.nvim_win_set_cursor(0, { 1, 0})
-  v.nvim_buf_set_lines(buf, -2, -1, true, {})
+  v.nvim_buf_set_lines(buf, -3, -1, true, {})
   vim.bo.filetype="mail"
   vim.bo.modifiable = false
 end
