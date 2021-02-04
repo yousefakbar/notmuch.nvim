@@ -18,10 +18,13 @@ local function find_cursor_msg_id()
 end
 
 t.msg_add_tag = function(tags)
-  local tags_mod = string.gsub(tags, '%s+(%w+)', ' +%1')
+  local db = require'notmuch.cnotmuch'('/Users/Yousef/Mail', 1)
   local id = find_cursor_msg_id()
-  os.execute('notmuch tag +' .. tags_mod .. ' -- id:' .. id)
-  print('+' .. tags_mod)
+  local t = u.split(tags, '%S+')
+  u.print_table(t)
+  db.message_add_tag(id, t)
+  db.close()
+  print('+' .. tags)
 end
 
 t.msg_rm_tag = function(tags)

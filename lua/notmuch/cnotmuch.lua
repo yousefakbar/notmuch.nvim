@@ -42,6 +42,11 @@ ffi.cdef[[
   notmuch_tags_t *
   notmuch_database_get_all_tags (notmuch_database_t *db);
 
+  notmuch_status_t
+  notmuch_database_find_message (notmuch_database_t *database,
+              const char *message_id,
+              notmuch_message_t **message);
+
   notmuch_query_t *
   notmuch_query_create (notmuch_database_t *database,
               const char *query_string);
@@ -143,6 +148,7 @@ local function open_database(path, mode)
     _db = db[0],
     create_query = function(query) return create_query(query, db[0]) end,
     get_all_tags = function() return get_all_tags(db[0]) end,
+    message_add_tag = function(id, tags) return message_add_tag(id, tags, db[0]) end,
     close = function() nm.notmuch_database_close(db[0]) end
   }
 end
@@ -170,6 +176,16 @@ function get_all_tags(db)
     nm.notmuch_tags_move_to_next(tags)
   end
   return out
+end
+
+function message_add_tag(id, tags, db)
+  local msg = ffi.new('notmuch_message_t*[1]')
+  local res = nm.notmuch_database_find_message(db, id, msg)
+  assert(res == 0, 'Error finding message from id. err=' .. res)
+  for k,v in pairs(tags) do
+    res = nm.notmuch_message_add_tag(msg[0], v)
+    assert(res == 0, 'Error adding tag:' .. v .. '. err=' .. res)
+  end
 end
 
 -- Counts the number of unique threads that matched a given query.
