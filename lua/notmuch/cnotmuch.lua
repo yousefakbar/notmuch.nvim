@@ -99,6 +99,9 @@ ffi.cdef[[
   notmuch_thread_t *
   notmuch_threads_get (notmuch_threads_t *threads);
 
+  notmuch_tags_t *
+  notmuch_thread_get_tags (notmuch_thread_t *thread);
+
   const char *
   notmuch_thread_get_thread_id (notmuch_thread_t *thread);
 
@@ -219,19 +222,9 @@ function thread_obj:rm_tag(tag)
   local message = ffi.new('notmuch_message_t[1]')
   while nm.notmuch_messages_valid(messages) == 1 do
     message = nm.notmuch_messages_get(messages)
-    local res = nm.notmuch_message_rm_tag(message, tag)
+    local res = nm.notmuch_message_remove_tag(message, tag)
     assert(res == 0, 'Error removing tag:' .. tag .. '. err=' .. res)
     nm.notmuch_messages_move_to_next(messages)
-  end
-end
-
--- Toggle tag to all messages inside a thread.
-function thread_obj:toggle_tag(tag)
-  self:get_tags()
-  if self.tags[tag] then
-    self:rm_tag(tag)
-  else
-    self:add_tag(tag)
   end
 end
 
@@ -282,16 +275,6 @@ end
 function message_obj:rm_tag(tag)
   local res = nm.notmuch_message_remove_tag(self._msg, tag)
   assert(res == 0, 'Error removing tag:' .. tag .. '. err=' .. res)
-end
-
--- Toggle a tag to a message.
-function message_obj:toggle_tag(tag)
-  self:get_tags()
-  if self.tags[tag] then
-    self:rm_tag(tag)
-  else
-    self:add_tag(tag)
-  end
 end
 
 -- Get a message object from an id: straight from the database.

@@ -48,11 +48,17 @@ t.msg_toggle_tag = function(tags)
   local db = require'notmuch.cnotmuch'(db_path, 1)
   local id = find_cursor_msg_id()
   local msg = db.get_message(id)
+  local curr_tags = msg:get_tags()
   for i,tag in pairs(t) do
-    msg:toggle_tag(tag)
+    if curr_tags[tag] == true then
+      msg:rm_tag(tag)
+      print('-' .. tag)
+    else
+      msg:add_tag(tag)
+      print('+' .. tag)
+    end
   end
   db.close()
-  print(tags)
 end
 
 t.thread_add_tag = function(tags)
@@ -70,35 +76,37 @@ t.thread_add_tag = function(tags)
 end
 
 t.thread_rm_tag = function(tags)
-  local tags_mod = string.gsub(tags, '%s+(%w+)', ' -%1')
+  local t = u.split(tags, '%S+')
   local line = v.nvim_get_current_line()
   local threadid = string.match(line, '%S+', 8)
-  os.execute('notmuch tag -' .. tags_mod .. ' -- thread:' .. threadid)
-  print('-' .. tags_mod)
-end
-
-t.thread_toggle_tag = function(tags)
-  local line = v.nvim_get_current_line()
-  local threadid = string.match(line, '%S+', 8)
-  local db = require'notmuch.cnotmuch'(db_path, 0)
+  local db = require'notmuch.cnotmuch'(db_path, 1)
   local query = db.create_query('thread:' .. threadid)
   local thread = query.get_threads()[1]
-  local subject = thread:get_subject()
-  print(subject)
+  for i,tag in pairs(t) do
+    thread:rm_tag(tag)
+  end
+  db.close()
+  print('-(' .. tags .. ')')
 end
 
 t.thread_toggle_tag = function(tags)
-  local tags_table = u.split(tags, "%S+")
+  local t = u.split(tags, '%S+')
   local line = v.nvim_get_current_line()
   local threadid = string.match(line, '%S+', 8)
-  local curr_tags = u.capture('notmuch search --output=tags -- thread:' .. threadid)
-  for k,tag in pairs(tags_table) do
-    if string.find(curr_tags, tag) ~= nil then
-      t.thread_rm_tag(tag)
+  local db = require'notmuch.cnotmuch'(db_path, 1)
+  local query = db.create_query('thread:' .. threadid)
+  local thread = query.get_threads()[1]
+  local curr_tags = thread:get_tags()
+  for i,tag in pairs(t) do
+    if curr_tags[tag] == true then
+      thread:rm_tag(tag)
+      print('-' .. tag)
     else
-      t.thread_add_tag(tag)
+      thread:add_tag(tag)
+      print('+' .. tag)
     end
   end
+  db.close()
 end
 
 return t
