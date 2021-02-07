@@ -140,6 +140,9 @@ ffi.cdef[[
 
   notmuch_status_t
   notmuch_message_remove_all_tags (notmuch_message_t *message);
+
+  notmuch_status_t
+  notmuch_message_tags_to_maildir_flags (notmuch_message_t *message);
 ]]
 
 -- Opens a Notmuch database. Entry point into the api.
@@ -212,6 +215,7 @@ function thread_obj:add_tag(tag)
     message = nm.notmuch_messages_get(messages)
     local res = nm.notmuch_message_add_tag(message, tag)
     assert(res == 0, 'Error adding tag:' .. tag .. '. err=' .. res)
+    nm.notmuch_message_tags_to_maildir_flags(message)
     nm.notmuch_messages_move_to_next(messages)
   end
 end
@@ -224,6 +228,7 @@ function thread_obj:rm_tag(tag)
     message = nm.notmuch_messages_get(messages)
     local res = nm.notmuch_message_remove_tag(message, tag)
     assert(res == 0, 'Error removing tag:' .. tag .. '. err=' .. res)
+    nm.notmuch_message_tags_to_maildir_flags(message)
     nm.notmuch_messages_move_to_next(messages)
   end
 end
@@ -268,12 +273,14 @@ end
 -- Add a tag to a message.
 function message_obj:add_tag(tag)
   local res = nm.notmuch_message_add_tag(self._msg, tag)
+  nm.notmuch_message_tags_to_maildir_flags(self._msg)
   assert(res == 0, 'Error adding tag:' .. tag .. '. err=' .. res)
 end
 
 -- Remove a tag to a message.
 function message_obj:rm_tag(tag)
   local res = nm.notmuch_message_remove_tag(self._msg, tag)
+  nm.notmuch_message_tags_to_maildir_flags(self._msg)
   assert(res == 0, 'Error removing tag:' .. tag .. '. err=' .. res)
 end
 
