@@ -29,42 +29,22 @@ end
 
 -- TODO generalize this: <dontcare>/<extension part
 a.view_attachment_part = function()
-  local n = v.nvim_win_get_cursor(0)[1]
-  local l = vim.fn.getline(n)
-  local id = string.match(v.nvim_buf_get_name(0), 'id:%C+')
-  if string.match(l, 'text/html') ~= nil then
-    os.execute('notmuch show --exclude=false --part=' .. n .. ' ' .. id .. '>/tmp/notmuch.html')
-    os.execute('open /tmp/notmuch.html')
-  elseif string.match(l, 'application/pdf') ~= nil then
-    os.execute('notmuch show --exclude=false --part=' .. n .. ' ' .. id .. '>/tmp/notmuch.pdf')
-    os.execute('open /tmp/notmuch.pdf')
-  elseif string.match(l, 'image/jpeg') ~= nil then
-    os.execute('notmuch show --exclude=false --part=' .. n .. ' ' .. id .. '>/tmp/notmuch.jpeg')
-    os.execute('open /tmp/notmuch.jpeg')
-  else
-    os.execute('notmuch show --exclude=false --part=' .. n .. ' ' .. id .. '>/tmp/notmuch.txt')
-    os.execute('open /tmp/notmuch.txt')
-  end
+  local f = a.save_attachment_part('/tmp')
+  os.execute('open ' .. f)
 end
 
 -- TODO generalize this: <dontcare>/<extension part
-a.save_attachment_part = function()
+a.save_attachment_part = function(savedir)
+  if savedir then dir = savedir else dir = '.' end
   local n = v.nvim_win_get_cursor(0)[1]
   local l = vim.fn.getline(n)
   local id = string.match(v.nvim_buf_get_name(0), 'id:%C+')
-  if string.match(l, 'text/html') ~= nil then
-    os.execute('notmuch show --exclude=false --part=' .. n .. ' ' .. id .. '>notmuch.html')
-    print('saved html part to notmuch.html')
-  elseif string.match(l, 'application/pdf') ~= nil then
-    os.execute('notmuch show --exclude=false --part=' .. n .. ' ' .. id .. '>notmuch.pdf')
-    print('saved html part to notmuch.pdf')
-  elseif string.match(l, 'image/jpeg') ~= nil then
-    os.execute('notmuch show --exclude=false --part=' .. n .. ' ' .. id .. '>notmuch.jpeg')
-    os.execute('open notmuch.jpeg')
-  else
-    os.execute('notmuch show --exclude=false --part=' .. n .. ' ' .. id .. '>notmuch.txt')
-    print('saved html part to notmuch.txt')
-  end
+  local ext = string.match(l, '%w+/(%w+)')
+  if ext == 'plain' then ext = 'txt' end
+  local f = dir .. '/notmuch.' .. ext
+  os.execute('notmuch show --exclude=false --part=' .. n .. ' ' .. id .. '>' .. f)
+  print('Saved to: ' .. f)
+  return f
 end
 
 a.get_attachments_from_cursor_msg = function()
