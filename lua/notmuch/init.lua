@@ -102,7 +102,8 @@ nm.show_thread = function(s)
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, "thread:" .. threadid)
   v.nvim_win_set_buf(0, buf)
-  v.nvim_command("silent 0read! notmuch show --exclude=false thread:" .. threadid .. " | sed 's///g'")
+  --v.nvim_command("silent 0read! notmuch show --exclude=false thread:" .. threadid .. " | sed 's///g'")
+  v.nvim_command("silent 0read! notmuch show --exclude=false thread:" .. threadid .. " | col")
   process_msgs_in_thread()
   v.nvim_win_set_cursor(0, { 1, 0})
   v.nvim_buf_set_lines(buf, -3, -1, true, {})
