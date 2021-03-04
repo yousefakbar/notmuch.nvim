@@ -4,6 +4,9 @@ local v = vim.api
 local default_cmd = 'mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a'
 if vim.g.NotmuchMaildirSyncCmd == nil then vim.g.NotmuchMaildirSyncCmd = default_cmd end
 
+local db_path = os.getenv("HOME") .. '/Mail'
+if vim.g.NotmuchDBPath == nil then vim.g.NotmuchDBPath = db_path end
+
 local function indent_depth(buf, lineno, depth)
   local line = vim.fn.getline(lineno)
   local s = ''
@@ -48,7 +51,7 @@ local function process_msgs_in_thread(buf)
 end
 
 local function show_all_tags()
-  local db = require'notmuch.cnotmuch'('/Users/Yousef/Mail', 0)
+  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
   local buf = v.nvim_create_buf(true, true)
   v.nvim_buf_set_name(buf, "Tags")
   v.nvim_win_set_buf(0, buf)
@@ -135,7 +138,7 @@ nm.notmuch_hello = function()
 end
 
 nm.count_search_term = function(search)
-  local db = require'notmuch.cnotmuch'('/Users/Yousef/Mail', 0)
+  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
   local query = db.create_query(search .. ' and not tag:spam')
   local count = query.count_threads()
   print('Found ' .. count .. ' threads')
