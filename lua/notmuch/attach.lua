@@ -53,7 +53,7 @@ a.get_attachments_from_cursor_msg = function()
   v.nvim_command('belowright 8new')
   v.nvim_buf_set_name(0, 'id:' .. id)
   vim.bo.buftype = "nofile"
-  v.nvim_command('silent 0read! notmuch show --part=0 --exclude=false id:' .. id .. ' | grep -E "^Content-Type:"')
+  v.nvim_command('silent 0read! notmuch show --part=0 --exclude=false id:' .. id .. ' | grep -E "^Content-[Tt]ype:"')
   v.nvim_win_set_cursor(0, { 1, 0 })
   v.nvim_buf_set_lines(0, -2, -1, true, {})
   vim.bo.filetype="notmuch-attach"
