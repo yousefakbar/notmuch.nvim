@@ -4,6 +4,11 @@ local v = vim.api
 local default_cmd = 'mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a'
 if vim.g.NotmuchMaildirSyncCmd == nil then vim.g.NotmuchMaildirSyncCmd = default_cmd end
 
+local default_open_cmd = 'xdg-open'
+if vim.fn.has('mac') == 1 then default_open_cmd = 'open' end
+if vim.g.NotmuchOpenCmd == nil then vim.g.NotmuchOpenCmd = default_open_cmd end
+
+
 local db_path = os.getenv("HOME") .. '/Mail'
 if vim.g.NotmuchDBPath == nil then vim.g.NotmuchDBPath = db_path end
 

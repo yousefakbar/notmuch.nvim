@@ -30,7 +30,7 @@ end
 -- TODO generalize this: <dontcare>/<extension part
 a.view_attachment_part = function()
   local f = a.save_attachment_part('/tmp')
-  os.execute('open ' .. f)
+  os.execute(vim.g.NotmuchOpenCmd .. ' ' .. f)
 end
 
 -- TODO generalize this: <dontcare>/<extension part
