@@ -29,8 +29,8 @@ CONTENTS                                                     *notmuch-contents*
   Introduction                          |notmuch-introduction|
     Feature Overview                    |notmuch-features|
     Requirements                        |notmuch-requirements|
-    Installation
-    Other Notmuch Plugins
+    Installation                        |notmuch-installation|
+    Other Notmuch Plugins               |notmuch-other-plugins|
   Usage
     Defaults
     Options
@@ -121,6 +121,9 @@ NeoVim version~
 
       `NeoVim`: https://github.com/neovim/neovim
 
+  Keep in mind this plugin is not compatible with Vim. It is designed
+  specifically for NeoVim and will not work for the former.
+
 Notmuch~
 
   The plugin interfaces with Notmuch and requires the executable to be
@@ -134,5 +137,49 @@ Notmuch~
   native package manager, or you can build it from source:
 
       `Notmuch`: https://notmuchmail.org
+
+------------------------------------------------------------------------------
+INSTALLATION                                             *notmuch-installation*
+
+Notmuch.nvim, like other (Neo)Vim plugins, can be installed using a plugin
+manager. Use your preferred plugin manager to download and install this
+plugin.
+
+Alternatively, you can download the source code from the repository manually
+to your filesystem, and add that directory to your 'runtimepath': >
+
+    git clone git://git.yousef.sh/notmuch.nvim.git
+<
+------------------------------------------------------------------------------
+OTHER NOTMUCH PLUGINS                                   *notmuch-other-plugins*
+
+Notmuch.nvim acts as a front-end for the Notmuch command line interface. There
+are other plugins and front-ends from which Notmuch.nvim draws inspiration.
+For a list of more -- not necessarily plugin -- front-ends for Notmuch, check
+their webpage [1].
+
+The first is the Notmuch Emacs package [2], which behaves and looks really
+similar to this plugin. The index view, thread-centric view and behavior, and
+message folding is mostly inspired by the Emacs package.
+
+The second front-end worth a look is the notmuch-vim plugin [3]. This is
+another plugin, written in Ruby, for Vim. It supports a similar index view and
+is also thread-based. Notmuch.nvim draws inspiration from its tagging
+capabilities and buffer-specific highlighting. For a more complete overview of
+notmuch-vim's features, see the demo video [4] made by its author, Felipe
+Contreras.
+
+What's the difference between Notmuch.nvim and notmuch-vim? Well for starters,
+Notmuch.nvim works in NeoVim (not Vim). Notmuch.nvim is written in Lua and,
+with LuaJIT, runs a bit faster. Notmuch.nvim supports asynchronous searching:
+you can continue in the main event loop while results pour in (especially
+useful for large tags/results). Notmuch.nvim also supports extraction of
+non-text attachments on top of the plain text view. These are features I think
+enhance the quality of life while browsing mail from a text editor.
+
+              {1} https://notmuchmail.org/frontends/
+              {2} https://notmuchmail.org/notmuch-emacs/
+              {3} https://git.notmuchmail.org/git/notmuch/blob/HEAD:/vim/README
+              {4} https://youtu.be/JGD7IbZmnIs
 
 vim:tw=78:isk=!-~,^*,^\|,^\":ts=8:noet:ft=help:norl:
