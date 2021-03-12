@@ -31,13 +31,12 @@ CONTENTS                                                     *notmuch-contents*
     Requirements                        |notmuch-requirements|
     Installation                        |notmuch-installation|
     Other Notmuch Plugins               |notmuch-other-plugins|
-  Usage
-    Defaults
-    Options
-    Commands
-    Completion
+  Usage                                 |notmuch-usage|
+    Commands                            |notmuch-commands|
+    Options                             |notmuch-options|
+    Completion                          |notmuch-completion|
   Behavior
-    Buffer Footprint
+    Buffers
     Highlighting
     Attachments
   Lua Structure
@@ -181,5 +180,136 @@ enhance the quality of life while browsing mail from a text editor.
               {2} https://notmuchmail.org/notmuch-emacs/
               {3} https://git.notmuchmail.org/git/notmuch/blob/HEAD:/vim/README
               {4} https://youtu.be/JGD7IbZmnIs
+
+==============================================================================
+USAGE                                                           *notmuch-usage*
+
+As mentioned before there are two main commands that serve as an entry point
+to the Notmuch interface. To see a list of features covered by this plugin,
+check the |notmuch-features| section. In this section we cover the commands,
+discuss how to use them and extend them, and provide some defaults and global
+variables that can be customized.
+
+Notmuch.nvim is a thread-based mail reader. The main workflow and usage of the
+plugin is to browse/search through threads, open and read them in plain text,
+extract their attachments and open them in external programs, and manipulate
+the tags associated with threads or individual messages within the notmuch
+database.
+
+	*Todo	move the below section to Behavior->Buffers
+
+Notmuch Buffers~
+
+In general, buffers created with Notmuch.nvim use the |scratch-buffer| utility
+in NeoVim. All the notmuch buffers are read-only and can be closed by simply
+pressing 'q'. They will usually be named verbosely based on the thread you're
+browsing or whatever search term you have performed.
+
+------------------------------------------------------------------------------
+COMMANDS                                                     *notmuch-commands*
+
+Let's showcase the two main commands that give the user a window into the
+Notmuch.nvim plugin and the local mail system to search and browse.
+
+                                                    *:Notmuch*
+:Notmuch             Shows a list of tags from the notmuch database in a new
+                     buffer. Pressing <CR> on any tag will search the buffer
+		     for all threads with that tag.
+
+		     Note: I recommend setting up a key mapping that invokes
+		     this command. That way you can access your notmuch mail
+		     with ease. For example: >
+
+		       nmap <silent> <leader>n :Notmuch<CR>
+<
+                                                    *:NmSearch*
+:NmSearch            Search and return a list of threads based on a notmuch
+                     query. The arguments of this command match the format of
+		     Notmuch's accepted search terms and supports generic
+		     completion (see `notmuch_search_terms(7)`). For example: >
+
+		       :NmSearch tag:inbox and date:today and subject:Urgent
+<
+                     Note: This command can be extended to quickly perform
+		     frequently used searches. For example: >
+
+		       command Inbox :NmSearch tag:inbox
+<
+                     Now your inbox is one word away at all times. This can
+		     even be generalized as a shell alias such that you can
+		     jump from the shell straight to your or any other handy
+		     search term you want.
+
+                                                    *:NmNew*
+:NmNew               Invoke `notmuch new` in the external shell to refresh
+                     your Notmuch database. This is a modular command to be
+		     used when you have new mail or would like to refresh your
+		     tags for whatever reason.
+
+                                                    *:NmSync*
+:NmSync              Refresh and synchronize your local Maildir directories
+                     with the remote server to keep them on track with each
+		     other. Typically this (1) invokes a remote synchronizing
+		     command in the shell (`mbsync(1)` by default) and then
+		     (2) refreshes your notmuch database with `notmuch new` .
+
+		     Note: By default, the sync command is set to: >
+
+		       mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a
+<
+                     But this command can be customized by setting
+		     |g:NotmuchMaildirSyncCmd| to a valid command.
+
+------------------------------------------------------------------------------
+OPTIONS                                                       *notmuch-options*
+
+This is a list of global options associated with the Notmuch.nvim plugin. They
+can be modified to alter the granular behavior of some notmuch commands. Each
+option will be listed with its default value.
+
+*g:NotmuchDBPath*
+  Path to your notmuch database. More precisely, set this to the directory
+  that contains the `.notmuch` directory.
+
+  Default value:
+    `'$HOME/Mail'`
+
+*g:NotmuchMaildirSyncCmd*
+  Program to run when synchronizing your local maildir mail to the remote
+  (IMAP or otherwise) server. Do not include the `notmuch new` refresh command
+  in this option. See |:NmSync| to see how this is used.
+
+  Default value:
+    `mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a`
+
+*g:NotmuchOpenCmd*
+  Catch-all program to invoke when opening attachments from messages. This is
+  initially based on operating system, but can be customized to something
+  else.
+
+  Default value:
+    `open(1)`        if MacOS.
+    `xdg_open(1)`    otherwise
+
+------------------------------------------------------------------------------
+COMPLETION                                                 *notmuch-completion*
+
+Notmuch.nvim provides a handy autoload function that returns completion items
+for commands. Specifcially this is used for |:NmSearch| as it helps quickly
+type search terms. The function in question is called
+`notmuch#CompSearchTerms()` and matches the format for generic completion
+functons (|command-completion-custom|).
+
+Although this is used for |:NmSearch|, you can actually use this as a
+completion function for any custom commands you may want to define. The
+completion function returns two types of results:
+
+  * If the word under the cursor says 'tags:', returns a list of all the tags
+    available in the notmuch database.
+  * Otherwise returns a list of all the valid search terms (see
+    `notmuch-search-terms(1)`)
+
+Note: Interestingly enough, this is the only bit of Vimscript used in the
+entire plugin (at least as of right now).
 
 vim:tw=78:isk=!-~,^*,^\|,^\":ts=8:noet:ft=help:norl:
