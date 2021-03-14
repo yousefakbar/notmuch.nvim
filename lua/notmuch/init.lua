@@ -6,6 +6,7 @@ if vim.g.NotmuchMaildirSyncCmd == nil then vim.g.NotmuchMaildirSyncCmd = default
 
 local default_open_cmd = 'xdg-open'
 if vim.fn.has('mac') == 1 then default_open_cmd = 'open' end
+if vim.fn.has('wsl') == 1 then default_open_cmd = 'wsl-open' end
 if vim.g.NotmuchOpenCmd == nil then vim.g.NotmuchOpenCmd = default_open_cmd end
 
 
