@@ -10,4 +10,8 @@ function! notmuch#CompSearchTerms(ArgLead, CmdLine, CursorPos) abort
   return join(s:search_terms_list, "\n")
 endfunction
 
+function! notmuch#CompTags(ArgLead, CmdLine, CursorPos) abort
+  return system('notmuch search --output=tags "*"')
+endfunction
+
 " vim: tabstop=2:shiftwidth=2:expandtab
