@@ -1,5 +1,6 @@
 local u = {}
 
+-- 99% sure there is a better way to do this !!!
 u.print_table = function(tab)
   for k,v in pairs(tab) do
     print(v)
@@ -13,6 +14,7 @@ u.capture = function(cmd)
   return out
 end
 
+-- there is a better way to do this !!!
 u.split = function(s, delim)
   local out = {}
   local i = 1
