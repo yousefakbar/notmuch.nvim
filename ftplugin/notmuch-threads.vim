@@ -16,4 +16,5 @@ nmap <buffer> + :TagAdd
 nmap <buffer> - :TagRm 
 nmap <buffer> = :TagToggle 
 nmap <buffer> a :TagToggle inbox<CR>j
+nmap <buffer> A :TagRm inbox unread<CR>j
 nmap <buffer> x :TagToggle unread<CR>j
