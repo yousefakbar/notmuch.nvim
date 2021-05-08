@@ -1,27 +1,6 @@
-*notmuch.txt*	Notmuch of an interface to your email	Last change: 03/03/21
+*notmuch.txt*	Notmuch of an email interface
 
 Author:  Yousef H. Akbar <yousef@yhakbar.com>
-License: MIT License
-
-Copyright (c) 2021 Yousef Akbar
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
 
 ==============================================================================
 CONTENTS                                                     *notmuch-contents*
@@ -43,6 +22,7 @@ CONTENTS                                                     *notmuch-contents*
     Library Bindings
     Asynchronous Searching
   Credit
+  License                               |notmuch-license|
 
 ==============================================================================
 INTRODUCTION                                             *notmuch-introduction*
@@ -50,7 +30,7 @@ INTRODUCTION                                             *notmuch-introduction*
 Notmuch is a command line program that indexes your local mail from a Maildir
 structure into a database wherein each message or thread can be tagged,
 searched, and manipulated in flexible and powerful ways. To learn more about
-the email program, check out their website:
+the email program, check out the project website:
 
     `Notmuch`: https://notmuchmail.org
 
@@ -72,7 +52,7 @@ The first command, |:Notmuch| , serves as an entry point into notmuch by
 displaying a list of all available tags in your database. The second command,
 |:NmSearch| , performs a query on your notmuch database using given arguments
 and returns a list of matched threads. These commands are explained in more
-depth in section ...
+depth in |notmuch-commands|
 
 Here is a non-comprehensive list of features of notmuch.nvim:
 
@@ -311,5 +291,30 @@ completion function returns two types of results:
 
 Note: Interestingly enough, this is the only bit of Vimscript used in the
 entire plugin (at least as of right now).
+
+==============================================================================
+LICENSE                                                       *notmuch-license*
+
+License: MIT License
+
+Copyright (c) 2021 Yousef Akbar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 vim:tw=78:isk=!-~,^*,^\|,^\":ts=8:noet:ft=help:norl:
