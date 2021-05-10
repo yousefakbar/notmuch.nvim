@@ -49,7 +49,12 @@ end
 
 a.get_attachments_from_cursor_msg = function()
   local id = find_cursor_msg_id()
+  local bufnr = vim.fn.bufnr('id:' .. id)
   if id == nil then return nil end
+  if bufnr ~= -1 then
+    print('Attachment list for this msg is already open in buffer: ' .. bufnr)
+    return nil
+  end
   v.nvim_command('belowright 8new')
   v.nvim_buf_set_name(0, 'id:' .. id)
   vim.bo.buftype = "nofile"
