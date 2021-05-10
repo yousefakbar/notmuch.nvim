@@ -66,9 +66,13 @@ a.get_attachments_from_cursor_msg = function()
 end
 
 a.get_urls_from_cursor_msg = function()
+  if vim.fn.exists(':YTerm') == 0 then
+    print("Can't launch URL selector (:YTerm command not found)")
+    return nil
+  end
   local id = find_cursor_msg_id()
   if id == nil then return nil end
-  v.nvim_command('YT "notmuch show id:' .. id .. ' | urlextract"')
+  v.nvim_command('YTerm "notmuch show id:' .. id .. ' | urlextract"')
 end
 
 a.follow_github_patch = function(line)
