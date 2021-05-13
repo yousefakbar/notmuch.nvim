@@ -70,6 +70,7 @@ local function show_all_tags()
 end
 
 nm.search_terms = function(search)
+  local num_threads_found = 0
   if search == '' then
     return nil
   elseif string.match(search, '^thread:%S+$') ~= nil then
@@ -82,7 +83,6 @@ nm.search_terms = function(search)
     return true
   end
   local buf = v.nvim_create_buf(true, true)
-  nm.count_search_term(search)
   v.nvim_buf_set_name(buf, search)
   v.nvim_win_set_buf(0, buf)
   v.nvim_command("silent 0read! notmuch search " .. search)
@@ -90,6 +90,8 @@ nm.search_terms = function(search)
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
   vim.bo.filetype = "notmuch-threads"
   vim.bo.modifiable = false
+  if vim.fn.getline(1) ~= '' then num_threads_found = vim.fn.line('$') end
+  print('Found ' .. num_threads_found .. ' threads')
 end
 
 nm.show_thread = function(s)
@@ -142,14 +144,6 @@ nm.notmuch_hello = function()
     show_all_tags()
   end
   print("Welcome to Notmuch.nvim! Choose a tag to search it.")
-end
-
-nm.count_search_term = function(search)
-  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
-  local query = db.create_query(search .. ' and not tag:spam')
-  local count = query.count_threads()
-  print('Found ' .. count .. ' threads')
-  db.close()
 end
 
 return nm
