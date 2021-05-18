@@ -1,7 +1,7 @@
 
 if match(bufname("%"), "^thread:") != -1
-	set foldmethod=marker
-	set foldlevel=0
+	setlocal foldmethod=marker
+	setlocal foldlevel=0
 
 	command -buffer -complete=custom,notmuch#CompTags -nargs=+ TagAdd :call v:lua.require('notmuch.tag').msg_add_tag("<args>")
 	command -buffer -complete=custom,notmuch#CompTags -nargs=+ TagRm :call tag.msg_rm_tag("<args>")
