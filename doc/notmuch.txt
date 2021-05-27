@@ -92,7 +92,8 @@ doesn't depend on any external plugins.
 NeoVim version~
 
   Notmuch.nvim requires NeoVim (>=0.5) to make use of its embedded LuaJIT
-  compiler, since the plugin is written mostly in Lua.
+  compiler, since the plugin is written mostly in Lua. The plugin is currently
+  tested on as late as version (v0.5.0-dev+991-g74b343a6f).
 
   If your operating system or distribution only contains an older version, you
   can build the source code from HEAD or from the nightly branch (recommended)
