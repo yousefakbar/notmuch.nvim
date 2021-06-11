@@ -56,6 +56,9 @@ ffi.cdef[[
                       notmuch_messages_t **out);
 
   notmuch_status_t
+  notmuch_query_count_messages (notmuch_query_t *query, unsigned int *count);
+
+  notmuch_status_t
   notmuch_query_count_threads (notmuch_query_t *query, unsigned *count);
 
   notmuch_status_t
@@ -173,6 +176,7 @@ function create_query(query_string, db)
     get_threads = function() return get_threads(query) end,
     get_messages = function() return get_messages(query) end,
     count_threads = function() return count_threads(query) end,
+    count_messages = function() return count_messages(query) end,
   }
 end
 
@@ -316,6 +320,13 @@ function count_threads(query)
   local count = ffi.new("unsigned int[1]")
   local res = nm.notmuch_query_count_threads(query, count)
   assert(res == 0, 'Error counting threads. err=' .. res)
+  return count[0]
+end
+
+function count_messages(query)
+  local count = ffi.new("unsigned int[1]")
+  local res = nm.notmuch_query_count_messages(query, count)
+  assert(res == 0, 'Error counting messages. err=' .. res)
   return count[0]
 end
 

@@ -69,6 +69,15 @@ local function show_all_tags()
   db.close()
 end
 
+nm.count = function(search)
+  local db = require'notmuch.cnotmuch'(vim.g.NotmuchDBPath, 0)
+  local q = db.create_query(search)
+  local count_messages = q.count_messages()
+  db.close()
+  return count_messages
+end
+
+
 nm.search_terms = function(search)
   local num_threads_found = 0
   if search == '' then
