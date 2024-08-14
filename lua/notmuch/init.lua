@@ -1,7 +1,7 @@
 local nm = {}
 local v = vim.api
 
-local default_cmd = 'mbsync -c $XDG_CONFIG_HOME/isync/mbsyncrc -a'
+local default_cmd = 'mbsync -a'
 if vim.g.NotmuchMaildirSyncCmd == nil then vim.g.NotmuchMaildirSyncCmd = default_cmd end
 
 local default_open_cmd = 'xdg-open'
@@ -77,7 +77,6 @@ nm.count = function(search)
   return count_messages
 end
 
-
 nm.search_terms = function(search)
   local num_threads_found = 0
   if search == '' then
@@ -121,7 +120,7 @@ nm.show_thread = function(s)
   v.nvim_win_set_buf(0, buf)
   --v.nvim_command("silent 0read! notmuch show --exclude=false thread:" .. threadid .. " | sed 's///g'")
   v.nvim_command("silent 0read! notmuch show --exclude=false thread:" .. threadid .. " | col")
-  process_msgs_in_thread()
+  process_msgs_in_thread(buf)
   v.nvim_win_set_cursor(0, { 1, 0})
   v.nvim_buf_set_lines(buf, -3, -1, true, {})
   vim.bo.filetype="mail"
