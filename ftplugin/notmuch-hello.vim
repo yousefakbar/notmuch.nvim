@@ -2,9 +2,9 @@
 let nm = v:lua.require('notmuch')
 let r = v:lua.require('notmuch.refresh')
 let s = v:lua.require('notmuch.sync')
-nmap <buffer> <silent> <CR> :call nm.search_terms("tag:" .. getline('.'))<CR>
-nmap <buffer> <silent> c :echo nm.count("tag:" .. getline('.'))<CR>
-nmap <buffer> <silent> q :bwipeout<CR>
-nmap <buffer> <silent> r :call r.refresh_hello_buffer()<CR>
-nmap <buffer> <silent> C :call v:lua.require('notmuch.send').compose()<CR>
-nmap <buffer> <silent> % :call s.sync_maildir()<CR>
+nnoremap <buffer> <silent> <CR> :call nm.search_terms("tag:" .. getline('.'))<CR>
+nnoremap <buffer> <silent> c :echo nm.count("tag:" .. getline('.'))<CR>
+nnoremap <buffer> <silent> q :bwipeout<CR>
+nnoremap <buffer> <silent> r :call r.refresh_hello_buffer()<CR>
+nnoremap <buffer> <silent> C :call v:lua.require('notmuch.send').compose()<CR>
+nnoremap <buffer> <silent> % :call s.sync_maildir()<CR>

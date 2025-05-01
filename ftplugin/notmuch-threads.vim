@@ -9,14 +9,14 @@ command -buffer -complete=custom,notmuch#CompTags -nargs=+ TagAdd :call tag.thre
 command -buffer -complete=custom,notmuch#CompTags -nargs=+ TagRm :call tag.thread_rm_tag("<args>")
 command -buffer -complete=custom,notmuch#CompTags -nargs=+ TagToggle :call tag.thread_toggle_tag("<args>")
 
-nmap <buffer> <silent> <CR> :call nm.show_thread()<CR>
-nmap <buffer> <silent> r :call r.refresh_search_buffer()<CR>
-nmap <buffer> <silent> q :bwipeout<CR>
-nmap <buffer> <silent> % :call s.sync_maildir()<CR>
-nmap <buffer> + :TagAdd 
-nmap <buffer> - :TagRm 
-nmap <buffer> = :TagToggle 
-nmap <buffer> a :TagToggle inbox<CR>j
-nmap <buffer> A :TagRm inbox unread<CR>j
-nmap <buffer> x :TagToggle unread<CR>j
-nmap <buffer> <silent> C :call v:lua.require('notmuch.send').compose()<CR>
+nnoremap <buffer> <silent> <CR> :call nm.show_thread()<CR>
+nnoremap <buffer> <silent> r :call r.refresh_search_buffer()<CR>
+nnoremap <buffer> <silent> q :bwipeout<CR>
+nnoremap <buffer> <silent> % :call s.sync_maildir()<CR>
+nnoremap <buffer> + :TagAdd 
+nnoremap <buffer> - :TagRm 
+nnoremap <buffer> = :TagToggle 
+nnoremap <buffer> a :TagToggle inbox<CR>j
+nnoremap <buffer> A :TagRm inbox unread<CR>j
+nnoremap <buffer> x :TagToggle unread<CR>j
+nnoremap <buffer> <silent> C :call v:lua.require('notmuch.send').compose()<CR>
