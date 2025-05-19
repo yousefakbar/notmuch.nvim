@@ -88,15 +88,18 @@ end
 -- message headers and body. The mail content is stored in `/tmp/` so the user
 -- can come back to it later if needed.
 --
+-- @param to string: recipient address (optionaal argument)
+--
 -- @usage
 --   -- Typically you can run this with `:ComposeMail` or pressing `C`
 --   require('notmuch.send').compose()
-s.compose = function()
+s.compose = function(to)
+  to = to or ''
   local compose_filename = '/tmp/compose.eml'
 
   -- TODO: Add ability to modify default body message and signature
   local headers = {
-    'To: ',
+    'To: ' .. to,
     'Cc: ',
     'Subject: ',
     '',

@@ -49,52 +49,64 @@ t.msg_toggle_tag = function(tags)
   db.close()
 end
 
-t.thread_add_tag = function(tags)
+t.thread_add_tag = function(tags, startlinenr, endlinenr)
+  startlinenr = startlinenr or v.nvim_win_get_cursor(0)[1]
+  endlinenr = endlinenr or startlinenr
   local t = u.split(tags, '%S+')
-  local line = v.nvim_get_current_line()
-  local threadid = string.match(line, '%S+', 8)
-  local db = require'notmuch.cnotmuch'(config.options.notmuch_db_path, 1)
-  local query = db.create_query('thread:' .. threadid)
-  local thread = query.get_threads()[1]
-  for i,tag in pairs(t) do
-    thread:add_tag(tag)
+  for linenr = startlinenr, endlinenr do
+    local line = vim.fn.getline(linenr)
+    local threadid = string.match(line, "%S+", 8)
+    local db = require("notmuch.cnotmuch")(config.options.notmuch_db_path, 1)
+    local query = db.create_query("thread:" .. threadid)
+    local thread = query.get_threads()[1]
+    for i,tag in pairs(t) do
+      thread:add_tag(tag)
+    end
+    db.close()
   end
-  db.close()
   print('+(' .. tags .. ')')
 end
 
-t.thread_rm_tag = function(tags)
+t.thread_rm_tag = function(tags, startlinenr, endlinenr)
+  startlinenr = startlinenr or v.nvim_win_get_cursor(0)[1]
+  endlinenr = endlinenr or startlinenr
   local t = u.split(tags, '%S+')
-  local line = v.nvim_get_current_line()
-  local threadid = string.match(line, '%S+', 8)
-  local db = require'notmuch.cnotmuch'(config.options.notmuch_db_path, 1)
-  local query = db.create_query('thread:' .. threadid)
-  local thread = query.get_threads()[1]
-  for i,tag in pairs(t) do
-    thread:rm_tag(tag)
+  for linenr = startlinenr, endlinenr do
+    local line = vim.fn.getline(linenr)
+    local threadid = string.match(line, "%S+", 8)
+    local db = require("notmuch.cnotmuch")(config.options.notmuch_db_path, 1)
+    local query = db.create_query("thread:" .. threadid)
+    local thread = query.get_threads()[1]
+    for i,tag in pairs(t) do
+      thread:rm_tag(tag)
+    end
+    db.close()
   end
-  db.close()
   print('-(' .. tags .. ')')
 end
 
-t.thread_toggle_tag = function(tags)
+t.thread_toggle_tag = function(tags, startlinenr, endlinenr)
+  startlinenr = startlinenr or v.nvim_win_get_cursor(0)[1]
+  endlinenr = endlinenr or startlinenr
   local t = u.split(tags, '%S+')
-  local line = v.nvim_get_current_line()
-  local threadid = string.match(line, '%S+', 8)
-  local db = require'notmuch.cnotmuch'(config.options.notmuch_db_path, 1)
-  local query = db.create_query('thread:' .. threadid)
-  local thread = query.get_threads()[1]
-  local curr_tags = thread:get_tags()
-  for i,tag in pairs(t) do
-    if curr_tags[tag] == true then
-      thread:rm_tag(tag)
-      print('-' .. tag)
-    else
-      thread:add_tag(tag)
-      print('+' .. tag)
+  for linenr = startlinenr, endlinenr do
+    local line = vim.fn.getline(linenr)
+    local threadid = string.match(line, "%S+", 8)
+    local db = require("notmuch.cnotmuch")(config.options.notmuch_db_path, 1)
+    local query = db.create_query("thread:" .. threadid)
+    local thread = query.get_threads()[1]
+    local curr_tags = thread:get_tags()
+    for i,tag in pairs(t) do
+      if curr_tags[tag] == true then
+        thread:rm_tag(tag)
+        print("-" .. tag)
+      else
+        thread:add_tag(tag)
+        print("+" .. tag)
+      end
     end
+    db.close()
   end
-  db.close()
 end
 
 return t
