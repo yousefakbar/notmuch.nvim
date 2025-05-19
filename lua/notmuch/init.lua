@@ -57,10 +57,11 @@ end
 --
 -- @param search string: search terms matching format from
 --                       `notmuch-search-terms(7)`
+-- @param jumptothreadid string: jump to thread id after search
 --
 -- @usage
 -- lua require('notmuch').search_terms('tag:inbox')
-nm.search_terms = function(search)
+nm.search_terms = function(search, jumptothreadid)
   local num_threads_found = 0
   if search == '' then
     return nil
@@ -85,6 +86,7 @@ nm.search_terms = function(search)
     -- Completion logic
     if vim.fn.getline(2) ~= '' then num_threads_found = vim.fn.line('$') - 1 end
     print('Found ' .. num_threads_found .. ' threads')
+    vim.fn.search(jumptothreadid)
   end)
 
   -- Set cursor at head of buffer, declare filetype, and disable modifying
