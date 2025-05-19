@@ -10,7 +10,7 @@ syntax region nmHints		start=/^Hints:/ end=/$/		oneline	contains=nmHintsIdentifi
 syntax match nmHintsIdentifier	"^Hints:"			contained nextgroup=nmHintsKey
 syntax match nmHintsKey		"\s\+[^:\s]\+"			contained nextgroup=nmHintsKVDelimiter
 syntax match nmHintsKVDelimiter	":"				contained nextgroup=nmHintsValue
-syntax match nmHintsValue	"\s\+[A-Za-z0-9\ ]\+"		contained nextgroup=nmHintsDelimiter
+syntax match nmHintsValue	"\s\+[A-Za-z0-9\ ,.]\+"		contained nextgroup=nmHintsDelimiter
 syntax match nmHintsDelimiter	"|"				contained nextgroup=nmHintsKey
 
 highlight link nmHintsIdentifier	Comment

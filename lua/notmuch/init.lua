@@ -78,7 +78,7 @@ nm.search_terms = function(search, jumptothreadid)
   v.nvim_buf_set_name(buf, search)
   v.nvim_win_set_buf(0, buf)
 
-  local hint_text = "Hints: <Enter>: Open thread | q: Close | r: Refresh | %: Sync maildir | a: Archive | A: Archive and Read | +: Add tag | -: Remove tag | =: Toggle tag"
+  local hint_text = "Hints: <Enter>: Open thread | q: Close | r: Refresh | %: Sync maildir | a: Archive | A: Archive and Read | +/-/=: Add, remove, toggle tag | dd: Delete"
   v.nvim_buf_set_lines(buf, 0, 2, false, { hint_text , "" })
 
   -- Async notmuch search to make the UX non blocking
