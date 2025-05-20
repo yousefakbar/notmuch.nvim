@@ -6,10 +6,15 @@ local C = {}
 -- including keymaps. The defaults can be overridden with options `opts` passed
 -- by the user in the `setup()` function.
 C.defaults = function()
+  local name = vim.fn.system('notmuch config get user.name'):gsub('\n', '') or ''
+  local email = vim.fn.system('notmuch config get user.primary_email'):gsub('\n', '') or ''
   local defaults = {
-    notmuch_db_path = os.getenv('HOME') .. '/Mail',
+    notmuch_db_path = vim.fn.system('notmuch config get database.path'):gsub('\n', ''),
+    from = name .. ' <' .. email .. '>',
     maildir_sync_cmd = 'mbsync -a',
     open_cmd = 'xdg-open',
+    logfile = nil,
+    sent_folder = nil,
     keymaps = { -- This should capture all notmuch.nvim related keymappings
       sendmail = '<C-g><C-g>',
     },
