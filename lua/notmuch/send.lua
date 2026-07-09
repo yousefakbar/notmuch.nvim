@@ -136,7 +136,7 @@ end
 s.sendmail = function(filename, opts)
   opts = opts or {}
 
-  if not vim.loop.fs_stat(filename) then
+  if not vim.uv.fs_stat(filename) then
     vim.notify('❌ Email file not found: ' .. filename, vim.log.levels.ERROR)
     if opts.on_failure then
       opts.on_failure(-1)

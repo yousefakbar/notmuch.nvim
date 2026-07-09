@@ -845,7 +845,7 @@ plugin's project codebase.
     - Pure Lua implementation for portability.
 
   - **async.lua**:
-    - Provides non-blocking subprocess execution via vim.loop.spawn().
+    - Provides non-blocking subprocess execution via vim.uv.spawn().
     - Used for asynchronous operations like searching and syncing.
     - Ensures the UI remains responsive during long-running operations.
     - Streams results incrementally as they become available.

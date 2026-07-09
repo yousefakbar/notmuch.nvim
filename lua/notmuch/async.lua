@@ -2,7 +2,7 @@ local a = {}
 
 -- Runs `notmuch search` asynchronously
 --
--- This function leverages the `vim.loop` library to spawn a subprocess and
+-- This function leverages the `vim.uv` library to spawn a subprocess and
 -- asynchronously run the `notmuch` search query in the background so it does
 -- not block `nvim`s event loop and allow seamless UX while results flow in
 --
@@ -17,12 +17,12 @@ local a = {}
 -- end)
 a.run_notmuch_search = function(search, buf, on_complete)
   -- Set up pipes for stdout and stderr to capture command output
-  local stdout = vim.loop.new_pipe(false)
-  local stderr = vim.loop.new_pipe(false)
+  local stdout = vim.uv.new_pipe(false)
+  local stderr = vim.uv.new_pipe(false)
 
-  -- Spawn subprocess using vim.loop (deprecated?)
+  -- Spawn subprocess using vim.uv
   local handle
-  handle = vim.loop.spawn("notmuch", {
+  handle = vim.uv.spawn("notmuch", {
     args = {"search", search},
     stdio = {nil, stdout, stderr}
   }, vim.schedule_wrap(function()
@@ -39,7 +39,7 @@ a.run_notmuch_search = function(search, buf, on_complete)
   local partial_data = ""
 
   -- Read data from stdout and write it to the buffer
-  vim.loop.read_start(stdout, vim.schedule_wrap(function(_, data)
+  vim.uv.read_start(stdout, vim.schedule_wrap(function(_, data)
     if data then
       -- Combine earlier incomplete chunk with newest read
       partial_data = partial_data .. data
@@ -62,7 +62,7 @@ a.run_notmuch_search = function(search, buf, on_complete)
   end))
 
   -- Log errors from stderr
-  vim.loop.read_start(stderr, vim.schedule_wrap(function(err, data)
+  vim.uv.read_start(stderr, vim.schedule_wrap(function(err, data)
     if err then
       vim.notify("ERROR: " .. err)
     elseif data then

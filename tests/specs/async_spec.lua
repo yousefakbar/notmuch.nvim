@@ -1,9 +1,9 @@
 local H = dofile("tests/helpers.lua")
 
 local function with_mocked_loop(run)
-  local old_new_pipe = vim.loop.new_pipe
-  local old_spawn = vim.loop.spawn
-  local old_read_start = vim.loop.read_start
+  local old_new_pipe = vim.uv.new_pipe
+  local old_spawn = vim.uv.spawn
+  local old_read_start = vim.uv.read_start
 
   local state = {
     pipes = {},
@@ -13,7 +13,7 @@ local function with_mocked_loop(run)
     closed_handle = false,
   }
 
-  vim.loop.new_pipe = function()
+  vim.uv.new_pipe = function()
     local pipe = {
       closed = false,
       close = function(self) self.closed = true end,
@@ -22,7 +22,7 @@ local function with_mocked_loop(run)
     return pipe
   end
 
-  vim.loop.spawn = function(cmd, opts, on_exit)
+  vim.uv.spawn = function(cmd, opts, on_exit)
     state.spawned = { cmd = cmd, opts = opts, on_exit = on_exit }
     local handle = {
       close = function() state.closed_handle = true end,
@@ -32,15 +32,15 @@ local function with_mocked_loop(run)
     return handle
   end
 
-  vim.loop.read_start = function(pipe, cb)
+  vim.uv.read_start = function(pipe, cb)
     state.reads[pipe] = cb
   end
 
   local ok, err = pcall(run, state)
 
-  vim.loop.new_pipe = old_new_pipe
-  vim.loop.spawn = old_spawn
-  vim.loop.read_start = old_read_start
+  vim.uv.new_pipe = old_new_pipe
+  vim.uv.spawn = old_spawn
+  vim.uv.read_start = old_read_start
 
   if not ok then error(err, 0) end
 end

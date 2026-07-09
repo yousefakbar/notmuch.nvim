@@ -67,8 +67,8 @@ u.validate_attachment_file = function(path)
 
   file:close()
 
-  -- Use vim.loop to check if it's a regular file (not directory/special file)
-  local stat = vim.loop.fs_stat(path)
+  -- Use vim.uv to check if it's a regular file (not directory/special file)
+  local stat = vim.uv.fs_stat(path)
   if not stat then
     return false, "Unable to read file metadata"
   end

@@ -193,7 +193,7 @@ return {
         local dir = H.tmpdir()
         local saved = attach.save_attachment_part(dir, false)
         H.ok(saved and saved:find(dir, 1, true), "expected save path in temp dir")
-        H.eq(true, vim.loop.fs_stat(saved) ~= nil)
+        H.eq(true, vim.uv.fs_stat(saved) ~= nil)
 
         vim.api.nvim_win_set_cursor(0, { 4, 0 })
         attach.open_attachment_part()
