@@ -53,7 +53,9 @@ C.defaults = function()
     maildir_sync_cmd = "mbsync -a",
     logfile = nil,
     send = {
-      terminal = true,
+      -- terminal: Real PTY terminal with stdin support for password input
+      -- background: Silent sync in background, notifications only
+      send_mode = "terminal", -- "terminal" | "background"
     },
     sync = {
       sync_mode = "buffer", -- "background" | "buffer" | "terminal"
