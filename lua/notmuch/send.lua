@@ -6,31 +6,18 @@ local v = vim.api
 
 local config = require('notmuch.config')
 
--- Prompt confirmation for sending an email
---
--- This function utilizes vim's builtin `confirm()` to prompt the user and
--- confirm the action of sending an email. This is applicable for sending newly
--- composed mails or replies by passing the mail file path.
---
--- @param filename string: path to the email message you would like to send
---
--- @usage
---   -- See reply() or compose()
---   vim.keymap.set('n', '<C-c><C-c>', function()
---     confirm_sendmail(reply_filename)
---   end, { buffer = true })
-local confirm_sendmail = function()
-  local choice = v.nvim_call_function('confirm', {
-    'Send email?',
-    '&Yes\n&No',
-    2 -- Default to no
-  })
-
-  if choice == 1 then
-    return true
-  else
-    return false
-  end
+---Prompt confirmation for sending an email
+---
+---This function utilizes vim.ui.select to prompt the user and
+---confirm the action of sending an email. This is applicable for sending newly
+---composed mails or replies by passing the mail file path.
+---@param cb function callback if user confirms
+local function confirm_sendmail(cb)
+	vim.ui.select({ "Yes", "No" }, { prompt = "Send mail ?" }, function(choice)
+		if choice == "Yes" then
+			cb()
+		end
+	end)
 end
 
 --- Builds plain text msg from contents into single-part MIME message of main
@@ -294,7 +281,7 @@ s.reply = function()
 
   -- Set keymap for sending
   vim.keymap.set('n', config.options.keymaps.sendmail, function()
-    if confirm_sendmail() then
+		confirm_sendmail(function()
       local attachments = v.nvim_buf_get_var(buf, 'notmuch_attachments')
 
       if #attachments == 0 then
@@ -304,7 +291,7 @@ s.reply = function()
       end
 
       s.sendmail(reply_filename)
-    end
+		end)
   end, { buffer = true })
 end
 
@@ -354,7 +341,7 @@ s.compose = function(to)
 
   -- Keymap for sending the email
   vim.keymap.set('n', config.options.keymaps.sendmail, function()
-    if confirm_sendmail() then
+    confirm_sendmail(function()
       if u.empty_attachment_window(buf_attach) then
         build_plain_msg(buf)
       else
@@ -362,7 +349,7 @@ s.compose = function(to)
       end
 
       s.sendmail(compose_filename)
-    end
+    end)
   end, { buffer = true })
 end
 
