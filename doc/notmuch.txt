@@ -863,11 +863,6 @@ plugin's project codebase.
     - Operates asynchronously, ensuring a non-blocking experience.
     - Supports configurable sync modes via the `sync_mode` option.
 
-  - **float.lua**:
-    - Implements floating windows for displaying custom content or terminals.
-    - Includes utility functions for creating bordered floating windows.
-    - Provides an interactive terminal experience integrated with NeoVim.
-
   - **cnotmuch.lua**:
     - A LuaJIT binding to the Notmuch C library (`libnotmuch`).
     - Wraps Notmuch's C API to enable operations like:
