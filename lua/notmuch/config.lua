@@ -52,6 +52,9 @@ C.defaults = function()
     from = name .. " <" .. email .. ">",
     maildir_sync_cmd = "mbsync -a",
     logfile = nil,
+    send = {
+      terminal = true,
+    },
     sync = {
       sync_mode = "buffer", -- "background" | "buffer" | "terminal"
       --   background: Silent sync in background, notifications only
