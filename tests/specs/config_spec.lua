@@ -77,6 +77,116 @@ return {
     end,
   },
   {
+    name = "config.setup provides incoming attachment config defaults",
+    run = function()
+      local config = require("notmuch.config")
+      with_mocked_notmuch_config({
+        ["database.path"] = "/tmp/notmuch-db",
+        ["user.name"] = "Tester",
+        ["user.primary_email"] = "tester@example.com",
+      }, function()
+        H.eq(true, config.setup({}))
+
+        local incoming = config.options.attach.incoming
+        H.ok(incoming.cache_dir)
+        H.contains(incoming.cache_dir, "notmuch.nvim")
+        H.contains(incoming.cache_dir, "attachments")
+
+        H.same({}, incoming.open.rules.prepend)
+        H.same({}, incoming.open.rules.append)
+        H.same({}, incoming.open.rules.replace)
+        H.same({}, incoming.open.rules.disable)
+
+        H.same({}, incoming.view.rules.prepend)
+        H.same({}, incoming.view.rules.append)
+        H.same({}, incoming.view.rules.replace)
+        H.same({}, incoming.view.rules.disable)
+
+        H.eq("float", incoming.view.window.type)
+        H.eq(0.8, incoming.view.window.width)
+        H.eq(0.8, incoming.view.window.height)
+        H.eq("rounded", incoming.view.window.border)
+      end)
+    end,
+  },
+  {
+    name = "config.setup merges incoming attachment rule patches",
+    run = function()
+      local config = require("notmuch.config")
+      with_mocked_notmuch_config({
+        ["database.path"] = "/tmp/notmuch-db",
+        ["user.name"] = "Tester",
+        ["user.primary_email"] = "tester@example.com",
+      }, function()
+        H.eq(true, config.setup({
+          attach = {
+            incoming = {
+              open = {
+                rules = {
+                  prepend = {
+                    {
+                      name = "pdf-zathura",
+                      match = { ext = "pdf" },
+                      command = { "zathura", "$path" },
+                      detach = true,
+                    },
+                  },
+                },
+              },
+              view = {
+                rules = {
+                  disable = { "pdf" },
+                  replace = {
+                    html = {
+                      name = "html",
+                      match = { content_type = "text/html" },
+                      commands = {
+                        { "custom-html", "$path" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        }))
+
+        local incoming = config.options.attach.incoming
+        local open_rule = incoming.open.rules.prepend[1]
+        H.eq("pdf-zathura", open_rule.name)
+        H.same({ "zathura", "$path" }, open_rule.command)
+        H.eq(true, open_rule.detach)
+
+        H.same({ "pdf" }, incoming.view.rules.disable)
+        H.eq("html", incoming.view.rules.replace.html.name)
+        H.same({ "custom-html", "$path" }, incoming.view.rules.replace.html.commands[1])
+        H.same({}, incoming.view.rules.prepend)
+        H.same({}, incoming.view.rules.append)
+      end)
+    end,
+  },
+  {
+    name = "config.setup expands incoming attachment cache directory",
+    run = function()
+      local config = require("notmuch.config")
+      with_mocked_notmuch_config({
+        ["database.path"] = "/tmp/notmuch-db",
+        ["user.name"] = "Tester",
+        ["user.primary_email"] = "tester@example.com",
+      }, function()
+        H.eq(true, config.setup({
+          attach = {
+            incoming = {
+              cache_dir = "~/notmuch-test-cache",
+            },
+          },
+        }))
+
+        H.eq(vim.fn.expand("~/notmuch-test-cache"), config.options.attach.incoming.cache_dir)
+      end)
+    end,
+  },
+  {
     name = "config.setup fails gracefully when database.path is missing",
     run = function()
       local config = require("notmuch.config")

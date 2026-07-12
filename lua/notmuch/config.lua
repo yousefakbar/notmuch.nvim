@@ -73,6 +73,33 @@ C.defaults = function()
       show_sent_drafts = false,
       auto_open_attachment_window = false,
     },
+    attach = {
+      incoming = {
+        cache_dir = vim.fs.joinpath(vim.fn.stdpath('cache'), 'notmuch.nvim', 'attachments'),
+        open = {
+          rules = {
+            prepend = {},
+            append = {},
+            replace = {},
+            disable = {},
+          },
+        },
+        view = {
+          rules = {
+            prepend = {},
+            append = {},
+            replace = {},
+            disable = {},
+          },
+          window = {
+            type = 'float',
+            width = 0.8,
+            height = 0.8,
+            border = 'rounded',
+          },
+        },
+      },
+    },
     open_handler = function(attachment)
       require("notmuch.handlers").default_open_handler(attachment)
     end,
@@ -115,6 +142,11 @@ C.setup = function(opts)
   end
 
   C.options = vim.tbl_deep_extend("force", defaults, options)
+
+  -- If `attach.incoming.cache_dir` is set by user, expand it
+  if C.options.attach and C.options.attach.incoming and C.options.attach.incoming.cache_dir then
+    C.options.attach.incoming.cache_dir = vim.fn.expand(C.options.attach.incoming.cache_dir)
+  end
 
   -- Validate and normalise the queries list
   if C.options.queries and #C.options.queries > 0 then
