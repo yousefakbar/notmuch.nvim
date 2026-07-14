@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Replaced deprecated `vim.loop` usage with `vim.uv` for Neovim libuv APIs.
 
+### Removed
+
+- Removed the unused internal `notmuch.float` module. Floating attachment viewing is handled directly by the attachment viewer.
+
 ## [0.4.0] - 2026-07-12
 
 ### Added
