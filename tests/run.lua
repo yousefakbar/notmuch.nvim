@@ -26,6 +26,7 @@ local spec_files = {
   "tests/specs/attach_incoming_modules_spec.lua",
   "tests/specs/attach_incoming_attachment_spec.lua",
   "tests/specs/attach_incoming_rules_spec.lua",
+  "tests/specs/attach_incoming_extractor_spec.lua",
 
   -- Buffer/UI and integration coverage.
   "tests/specs/init_spec.lua",
