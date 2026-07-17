@@ -14,8 +14,9 @@ local R = {}
 ---@field match NotmuchIncomingRuleMatcher Rule matcher.
 ---@field command? NotmuchIncomingCommand Open command definition.
 ---@field commands? NotmuchIncomingCommand[] View command fallback definitions.
+---@field handler? fun(attachment: NotmuchIncomingAttachment): any,string|nil Custom rule handler returning a result or nil plus error.
 ---@field filetype? string Filetype for rendered view buffers.
----@field fallback? string User-facing fallback message.
+---@field fallback? string|fun(attachment: NotmuchIncomingAttachment): string User-facing fallback message.
 ---@field detach? boolean Whether open commands should be detached processes.
 
 ---@class NotmuchIncomingRulePatches
