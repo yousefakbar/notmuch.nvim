@@ -29,8 +29,8 @@ return {
 
       H.eq('function', type(defaults.open_rules))
       H.eq('function', type(defaults.view_rules))
-      H.same({}, defaults.open_rules())
-      H.same({}, defaults.view_rules())
+      H.eq('table', type(defaults.open_rules()))
+      H.eq('table', type(defaults.view_rules()))
 
       H.eq('function', type(viewer.view))
       H.eq('function', type(opener.open))
