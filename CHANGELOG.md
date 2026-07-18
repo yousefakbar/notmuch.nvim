@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `:AttachList`
   - `:AttachOpen`
 - New `drafts.auto_open_attachment_window` option to control whether draft attachment scratch windows open automatically
+- Rule-based received attachment configuration under `attach.incoming` for cache-backed open/view behavior
 
 ### Changed
 
@@ -66,6 +67,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `notmuch.attach.state` owns canonical draft attachment state
   - `notmuch.attach.scratch` owns the draft attachment scratch window
   - `notmuch.attach.parts` owns received-message MIME part listing/opening/saving
+- Received attachment open/view actions now use deterministic cache extraction and rule registries instead of top-level handler callbacks
+- The default received attachment opener now prefers `vim.ui.open()` when available and falls back to the OS opener command
+
+### Removed
+
+- Removed top-level received attachment `open_handler` and `view_handler` configuration callbacks in favor of `attach.incoming.open.rules` and `attach.incoming.view.rules`
+- Removed the legacy `lua/notmuch/handlers.lua` callback implementation
 
 ### Fixed
 

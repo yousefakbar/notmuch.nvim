@@ -140,8 +140,10 @@ You can configure several global options to tailor the plugin's behavior:
 | `send.send_mode`   | Send mode: `"terminal"` (PTY with stdin) or `"background"`                       | `terminal`                      |
 | `queries`          | Saved/pinned queries shown at top of `:Notmuch` dashboard; hidden when empty    | `{}`                            |
 | `keymaps`          | Configure any (WIP) command's keymap                                            | See `config.lua`[1]             |
-| `open_handler`     | Callback function for opening attachments                                       | Runs OS-aware `open`[2]         |
-| `view_handler`     | Callback function for converting attachments to text to view in floating window | See `default_view_handler()`[2] |
+| `attach.incoming.cache_dir` | Cache directory used when opening/viewing received attachments | `stdpath("cache")/notmuch.nvim/attachments` |
+| `attach.incoming.open.rules` | Patch table for received attachment open rules | empty patch table |
+| `attach.incoming.view.rules` | Patch table for received attachment view rules | empty patch table |
+| `attach.incoming.view.window` | Floating preview window options | `{ type = "float", width = 0.8, height = 0.8, border = "rounded" }` |
 | `render_html_body` | Render HTML email bodies inline using `w3m` (requires `w3m` installed)          | `false`                         |
 | `thread_view_mode` | Thread view mode: `"threaded"`, `"newest-first"`, or `"oldest-first"`        | `"threaded"`                   |
 | `drafts.folder` | Directory used for persistent compose/reply draft `.eml` files and JSON metadata | `stdpath("data")/notmuch.nvim/drafts` |
@@ -151,7 +153,6 @@ You can configure several global options to tailor the plugin's behavior:
 | `suppress_deprecation_warning` | Suppress the warning shown when using deprecated notmuch API (< 0.32) | `false`                         |
 
 [1]: https://github.com/yousefakbar/notmuch.nvim/blob/main/lua/notmuch/config.lua
-[2]: https://github.com/yousefakbar/notmuch.nvim/blob/main/lua/notmuch/handlers.lua
 
 Example configuration in plugin manager (lazy.nvim):
 
@@ -209,43 +210,73 @@ The scratch window and commands update the same draft attachment state. Set
 `drafts.auto_open_attachment_window = true` if you want the scratch window to
 open automatically whenever a draft opens.
 
-### Customizing Attachment Handlers
+### Customizing Received Attachment Rules
 
-The plugin provides two handlers for working with received-message attachments:
+Received-message attachments use rule registries instead of monolithic handler
+callbacks. Open/view actions extract the selected MIME part to
+`attach.incoming.cache_dir`, build a structured attachment object, then resolve
+open or view rules. Save actions still write directly to the user-selected path.
 
-**Open Handler**: Opens attachments externally with your system's default
-application. The default handler automatically detects your OS and uses `open`
-(macOS), `xdg-open` (Linux), or `start` (Windows).
+Rules can be customized with patch tables:
 
-**View Handler**: Converts attachments to text for display in a floating window
-within Neovim. The default handler supports HTML, PDF, images, Office documents,
-Markdown, archives, and plain text files. It tries multiple CLI tools for each
-format and falls back gracefully if tools aren't available.
+- `prepend`: try rules before defaults;
+- `append`: try rules after defaults;
+- `replace`: replace a default rule by name;
+- `disable`: disable default rules by name.
 
-To customize either handler, pass a function to `setup()`:
+Example: replace the default PDF preview rule:
 
 ```lua
 require('notmuch').setup({
-    -- Custom open handler
-    open_handler = function(attachment)
-        -- attachment.path contains the full file path
-        vim.fn.system({ 'my-custom-opener', attachment.path })
-    end,
-
-    -- Custom view handler
-    view_handler = function(attachment)
-        -- Must return a string to display in the floating window
-        local path = attachment.path
-        if path:match('%.pdf$') then
-            return vim.fn.system({ 'pdftotext', '-layout', path, '-' })
-        end
-        return vim.fn.system({ 'cat', path })
-    end,
+    attach = {
+        incoming = {
+            view = {
+                rules = {
+                    replace = {
+                        pdf = {
+                            name = 'pdf',
+                            match = { content_type = 'application/pdf' },
+                            commands = {
+                                { 'pdftotext', '-raw', '$path', '-' },
+                            },
+                            filetype = 'text',
+                            fallback = 'Install pdftotext to preview PDFs.',
+                        },
+                    },
+                },
+            },
+        },
+    },
 })
 ```
 
-The default handlers are defined in `lua/notmuch/handlers.lua` and handle many
-common formats out of the box. Only override them if you need specific behavior.
+Example: prepend a custom external opener for PDFs while keeping defaults as
+fallbacks:
+
+```lua
+require('notmuch').setup({
+    attach = {
+        incoming = {
+            open = {
+                rules = {
+                    prepend = {
+                        {
+                            name = 'pdf-zathura',
+                            match = { ext = 'pdf' },
+                            command = { 'zathura', '$path' },
+                            detach = true,
+                        },
+                    },
+                },
+            },
+        },
+    },
+})
+```
+
+The default open rule prefers `vim.ui.open()` when available and falls back to
+the OS opener command. Default view rules cover HTML, PDF, images, Office
+documents, Markdown, archives, text, and binary fallbacks.
 
 ### Statusline Integration
 

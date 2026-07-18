@@ -362,51 +362,77 @@ option will be listed with its default value.
   Default value:
     `"buffer"`
 
-*open_handler*
-  Callback function for opening attachments externally with system applications.
-  The function receives an attachment table with a 'path' field containing the
-  file path.
+*attach.incoming.cache_dir*
+  Cache directory used when opening or viewing received-message attachments.
+  Open/view actions extract the selected MIME part here before rule execution.
+  Save actions still write directly to the user-selected destination.
 
-  Default behavior:
-    Automatically detects your OS and uses:
-    - `open` on macOS
-    - `xdg-open` on Linux
-    - `start` on Windows
+  Default value:
+    `stdpath("cache")/notmuch.nvim/attachments`
 
-  Example customization: >
-
-    require('notmuch').setup({
-      open_handler = function(attachment)
-        vim.fn.system({ 'my-opener', attachment.path })
-      end,
-    })
-<
-
-*view_handler*
-  Callback function for converting attachments to text for display in a
-  floating window within Neovim. The function receives an attachment table
-  with a 'path' field and must return a string to display.
-
-  Default behavior:
-    Supports HTML, PDF, images, Office documents, Markdown, archives, and
-    plain text. Tries multiple CLI tools for each format (e.g., w3m/lynx for
-    HTML, pdftotext/mutool for PDF) and falls back gracefully if tools aren't
-    available.
+*attach.incoming.open.rules*
+  Patch table for received attachment open rules. Supported patch fields are
+  `prepend`, `append`, `replace`, and `disable`. The default `system` rule
+  prefers `vim.ui.open()` when available and falls back to the OS opener
+  command (`open`, `xdg-open`, or `start`).
 
   Example customization: >
 
     require('notmuch').setup({
-      view_handler = function(attachment)
-        local path = attachment.path
-        if path:match('%.pdf$') then
-          return vim.fn.system({ 'pdftotext', '-layout', path, '-' })
-        end
-        return vim.fn.system({ 'cat', path })
-      end,
+      attach = {
+        incoming = {
+          open = {
+            rules = {
+              prepend = {
+                {
+                  name = 'pdf-zathura',
+                  match = { ext = 'pdf' },
+                  command = { 'zathura', '$path' },
+                  detach = true,
+                },
+              },
+            },
+          },
+        },
+      },
     })
 <
 
-  Note: See lua/notmuch/handlers.lua for the complete default implementation.
+*attach.incoming.view.rules*
+  Patch table for received attachment view rules. Default rules support HTML,
+  PDF, images, Office documents, Markdown, archives, text, and binary fallback
+  previews. Rules are patched with `prepend`, `append`, `replace`, and
+  `disable`.
+
+  Example replacing the PDF rule: >
+
+    require('notmuch').setup({
+      attach = {
+        incoming = {
+          view = {
+            rules = {
+              replace = {
+                pdf = {
+                  name = 'pdf',
+                  match = { content_type = 'application/pdf' },
+                  commands = { { 'pdftotext', '-raw', '$path', '-' } },
+                  filetype = 'text',
+                  fallback = 'Install pdftotext to preview PDFs.',
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+<
+
+*attach.incoming.view.window*
+  Floating window options for received attachment previews.
+
+  Default value: >
+    { type = 'float', width = 0.8, height = 0.8, border = 'rounded' }
+<
 
 *keymaps*
   Keymap configuration table where you can override plugin defaults for all
@@ -832,16 +858,14 @@ plugin's project codebase.
     - Handles received-message MIME part listing/opening/viewing/saving.
     - Supports extracting URLs from messages and following GitHub patch links.
 
-  - **handlers.lua**:
-    - Defines default handlers for opening and viewing attachments.
-    - **default_open_handler()**: OS-aware external opener using open,
-      xdg-open, or start depending on the platform.
-    - **default_view_handler()**: Converts various file formats to text for
-      in-buffer display. Supports HTML (w3m, lynx, elinks), PDF (pdftotext,
-      mutool), images (chafa, catimg, viu, exiftool), Office documents
-      (pandoc, docx2txt), Markdown, and archives (zip, tar).
-    - Users can override these handlers via |open_handler| and |view_handler|
-      configuration options.
+  - **attach/incoming/**:
+    - Rule-based received attachment subsystem.
+    - Builds structured attachment objects, extracts open/view parts to cache,
+      resolves configurable open/view rules, runs external openers/converters,
+      and renders preview buffers.
+    - Default open behavior prefers `vim.ui.open()` with OS command fallback.
+    - Default view rules cover HTML, PDF, images, Office documents, Markdown,
+      archives, text, and binary fallback previews.
 
   - **send.lua**:
     - Implements composing, replying, persistent draft opening, and sending.
