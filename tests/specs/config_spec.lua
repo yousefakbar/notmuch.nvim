@@ -33,24 +33,15 @@ return {
         ["user.name"] = false,
         ["user.primary_email"] = false,
       }, function()
-        local open_handler = function() end
-        local view_handler = function() end
-        H.eq(
-          true,
-          config.setup({
-            notmuch_db_path = "~/custom-db",
-            maildir_sync_cmd = "true",
-            open_handler = open_handler,
-            view_handler = view_handler,
-            sync = { sync_mode = "background" },
-            drafts = { auto_open_attachment_window = true },
-            keymaps = { sendmail = "<F5>" },
-          })
-        )
+        H.eq(true, config.setup({
+          notmuch_db_path = "~/custom-db",
+          maildir_sync_cmd = "true",
+          sync = { sync_mode = "background" },
+          drafts = { auto_open_attachment_window = true },
+          keymaps = { sendmail = "<F5>" },
+        }))
         H.eq(vim.fn.expand("~/custom-db"), config.options.notmuch_db_path)
         H.eq("User <user@localhost>", config.options.from)
-        H.eq(open_handler, config.options.open_handler)
-        H.eq(view_handler, config.options.view_handler)
         H.eq("background", config.options.sync.sync_mode)
         H.eq(true, config.options.drafts.auto_open_attachment_window)
         H.eq("<F5>", config.options.keymaps.sendmail)
