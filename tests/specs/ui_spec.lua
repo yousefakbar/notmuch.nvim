@@ -167,15 +167,33 @@ return {
       local nm = require("notmuch")
       local attach = require("notmuch.attach.parts")
       local config = require("notmuch.config")
-      local old_open, old_view = config.options.open_handler, config.options.view_handler
+      local old_incoming = vim.deepcopy(config.options.attach.incoming)
       local opened, viewed
-      config.options.open_handler = function(attachment)
-        opened = attachment.path
-      end
-      config.options.view_handler = function(attachment)
-        viewed = attachment.path
-        return "stub viewed attachment"
-      end
+      config.options.attach.incoming.cache_dir = H.tmpdir() .. "/incoming-cache"
+      config.options.attach.incoming.open.rules = {
+        replace = {
+          system = {
+            name = "system",
+            match = "*",
+            handler = function(attachment)
+              opened = attachment.path
+              return true, nil
+            end,
+          },
+        },
+      }
+      config.options.attach.incoming.view.rules = {
+        prepend = {
+          {
+            name = "stub-view",
+            match = "*",
+            handler = function(attachment)
+              viewed = attachment.path
+              return { content = "stub viewed attachment", filetype = "text", title = "stub" }
+            end,
+          },
+        },
+      }
 
       local ok, err = pcall(function()
         vim.cmd("NmSearch tag:attachment")
@@ -206,19 +224,17 @@ return {
 
         vim.api.nvim_win_set_cursor(0, { 4, 0 })
         attach.open_attachment_part()
-        H.ok(opened and opened:find("/tmp/", 1, true), "expected open handler to receive /tmp path")
+        H.ok(opened and opened:find("incoming%-cache", 1, false), "expected opener to receive cached path")
 
         vim.api.nvim_win_set_cursor(0, { 4, 0 })
         attach.view_attachment_part()
-        H.ok(viewed and viewed:find("/tmp/", 1, true), "expected view handler to receive /tmp path")
+        H.ok(viewed and viewed:find("incoming%-cache", 1, false), "expected viewer to receive cached path")
         H.contains(H.current_lines(), "stub viewed attachment")
         vim.cmd("close")
       end)
 
-      config.options.open_handler, config.options.view_handler = old_open, old_view
-      if not ok then
-        error(err, 0)
-      end
+      config.options.attach.incoming = old_incoming
+      if not ok then error(err, 0) end
     end,
   },
   {

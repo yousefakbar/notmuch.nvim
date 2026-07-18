@@ -312,17 +312,11 @@ return {
     end,
   },
   {
-    name = "attach.parts.save/open/view handlers handle failed saves and configured callbacks",
+    name = "attach.parts.open/view delegates selected part to incoming subsystem",
     run = function()
       local attach = require("notmuch.attach.parts")
-      local config = require("notmuch.config")
-      local part = {
-        id = 9,
-        content_type = "text/plain",
-        filename = "view.txt",
-        disposition = "attachment",
-        size = 1,
-      }
+      local incoming = require("notmuch.attach.incoming")
+      local part = { id = 9, content_type = "text/plain", filename = "view.txt", disposition = "attachment", size = 1 }
       local buf = attachment_buf({ part }, "id:handler-msg")
       vim.api.nvim_win_set_cursor(0, { 4, 0 })
 
@@ -330,31 +324,30 @@ return {
         H.eq(nil, attach.save_attachment_part("/dev/null", false))
       end)
 
-      local old_open, old_view = config.options.open_handler, config.options.view_handler
+      local old_open, old_view = incoming.open_part, incoming.view_part
       local opened, viewed
-      config.options.open_handler = function(attachment)
-        opened = attachment.path
+      incoming.open_part = function(selected, message_id)
+        opened = { part = selected, message_id = message_id }
+        return true
       end
-      config.options.view_handler = function(attachment)
-        viewed = attachment.path
-        return "viewed output"
+      incoming.view_part = function(selected, message_id)
+        viewed = { part = selected, message_id = message_id }
+        return { buf = 1, win = 1 }
       end
 
-      with_system_result(0, function()
-        silence_print(function()
-          attach.open_attachment_part()
-        end)
-        H.eq("/tmp/view.txt", opened)
-        silence_print(function()
-          attach.view_attachment_part()
-        end)
-        H.eq("/tmp/view.txt", viewed)
-        H.contains(vim.api.nvim_buf_get_lines(0, 0, -1, false), "viewed output")
-        vim.cmd("close")
+      local ok, err = pcall(function()
+        H.eq(true, attach.open_attachment_part())
+        H.same(part, opened.part)
+        H.eq("id:handler-msg", opened.message_id)
+
+        H.same({ buf = 1, win = 1 }, attach.view_attachment_part())
+        H.same(part, viewed.part)
+        H.eq("id:handler-msg", viewed.message_id)
       end)
 
-      config.options.open_handler, config.options.view_handler = old_open, old_view
+      incoming.open_part, incoming.view_part = old_open, old_view
       vim.api.nvim_buf_delete(buf, { force = true })
+      if not ok then error(err, 0) end
     end,
   },
 }

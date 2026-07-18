@@ -5,7 +5,6 @@ local P = {}
 --------------------------------------------------------------------------------
 
 local v = vim.api
-local config = require("notmuch.config")
 local util = require("notmuch.util")
 local thread = require("notmuch.thread")
 
@@ -324,67 +323,39 @@ function P.save_attachment_part(savedir, prompt_user)
   end
 end
 
---- Opens the MIME part at cursor with the configured open_handler.
+--- Opens the MIME part at cursor with the incoming attachment opener.
 --
--- Saves the attachment to /tmp first, then passes the path to the
--- open_handler callback (typically xdg-open or similar).
+-- Extracts the attachment to the configured incoming attachment cache, then
+-- delegates to the rule-based opener.
 --
----@return nil
+---@return boolean|nil ok True when opened, or nil on failure/invalid cursor.
 function P.open_attachment_part()
-  local filepath = P.save_attachment_part("/tmp", false)
-
-  if not filepath then
+  local part = get_part_at_cursor()
+  if not part then
     return nil
   end
 
-  config.options.open_handler({ path = vim.fn.expand(filepath) })
+  local id = string.match(v.nvim_buf_get_name(0), 'id:%C+')
+  local ok = require('notmuch.attach.incoming').open_part(part, id)
+  return ok or nil
 end
 
 --- Views the MIME part at cursor in a floating window.
 --
--- Saves the attachment to /tmp, processes it with view_handler,
--- and displays the output in a centered floating window.
+-- Extracts the attachment to the configured incoming attachment cache, converts
+-- it with the rule-based viewer, and renders the result in a floating window.
 -- Press 'q' to close the window.
 --
----@return nil
+---@return table|nil rendered Rendered preview handles, or nil on failure/invalid cursor.
 function P.view_attachment_part()
-  -- Save to temp directory without prompting
-  local filepath = P.save_attachment_part("/tmp", false)
-
-  -- If save fails, return early
-  if not filepath then
+  local part = get_part_at_cursor()
+  if not part then
     return nil
   end
 
-  -- Process with user's configured view_handler
-  local output = config.options.view_handler({ path = vim.fn.expand(filepath) })
-  local lines = vim.split(output, "\n")
-
-  -- Create new buffer for floating window
-  local buf = v.nvim_create_buf(false, true)
-
-  -- Floating window - calculate size
-  local width = math.floor(vim.o.columns * 0.8)
-  local height = math.floor(vim.o.lines * 0.8)
-  local col = math.floor((vim.o.columns - width) / 2)
-  local row = math.floor((vim.o.lines - height) / 2)
-
-  local win = vim.api.nvim_open_win(buf, true, {
-    border = "rounded",
-    relative = "editor",
-    style = "minimal",
-    height = height,
-    width = width,
-    row = row,
-    col = col,
-  })
-
-  v.nvim_buf_set_lines(buf, 0, -1, false, lines)
-
-  v.nvim_set_option_value("modifiable", false, { buf = buf })
-  vim.keymap.set("n", "q", function()
-    v.nvim_win_close(win, false)
-  end, { buffer = buf })
+  local id = string.match(v.nvim_buf_get_name(0), 'id:%C+')
+  local rendered = require('notmuch.attach.incoming').view_part(part, id)
+  return rendered
 end
 
 function P.get_urls_from_cursor_msg()
