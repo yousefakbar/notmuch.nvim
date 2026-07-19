@@ -63,7 +63,7 @@ return {
         ui_open_set = true,
         ui_open = function(path)
           opened = path
-          return nil
+          return { pid = 123 }, nil
         end,
         system = function()
           error('vim.system should not be called when vim.ui.open succeeds')
@@ -110,7 +110,7 @@ return {
       with_open_mocks({
         ui_open_set = true,
         ui_open = function()
-          return 'ui failed'
+          return nil, 'ui failed'
         end,
         executable = function()
           return 1

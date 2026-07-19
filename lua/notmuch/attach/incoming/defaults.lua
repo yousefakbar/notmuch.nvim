@@ -20,7 +20,7 @@ end
 
 local function vim_ui_open(att)
   if vim.ui and vim.ui.open then
-    local err = vim.ui.open(att.path)
+    local _, err = vim.ui.open(att.path)
     if err then
       return nil, err
     end
