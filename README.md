@@ -140,10 +140,11 @@ You can configure several global options to tailor the plugin's behavior:
 | `send.send_mode`   | Send mode: `"terminal"` (PTY with stdin) or `"background"`                       | `terminal`                      |
 | `queries`          | Saved/pinned queries shown at top of `:Notmuch` dashboard; hidden when empty    | `{}`                            |
 | `keymaps`          | Configure any (WIP) command's keymap                                            | See `config.lua`[1]             |
-| `attach.incoming.cache_dir` | Cache directory used when opening/viewing received attachments | `stdpath("cache")/notmuch.nvim/attachments` |
-| `attach.incoming.open.rules` | Patch table for received attachment open rules | empty patch table |
-| `attach.incoming.view.rules` | Patch table for received attachment view rules | empty patch table |
-| `attach.incoming.view.window` | Floating preview window options | `{ type = "float", width = 0.8, height = 0.8, border = "rounded" }` |
+| `attachments.cache_dir` | Shorthand for received attachment open/view cache directory | `stdpath("cache")/notmuch.nvim/attachments` |
+| `attachments.open` | List of received attachment open rules tried before defaults | `{}` |
+| `attachments.view` | List of received attachment view rules tried before defaults | `{}` |
+| `attachments.window` | Shorthand for floating attachment preview window options | `{ type = "float", width = 0.8, height = 0.8, border = "rounded" }` |
+| `attach.incoming.*` | Advanced received attachment rule patch API | See below |
 | `render_html_body` | Render HTML email bodies inline using `w3m` (requires `w3m` installed)          | `false`                         |
 | `thread_view_mode` | Thread view mode: `"threaded"`, `"newest-first"`, or `"oldest-first"`        | `"threaded"`                   |
 | `drafts.folder` | Directory used for persistent compose/reply draft `.eml` files and JSON metadata | `stdpath("data")/notmuch.nvim/drafts` |
@@ -217,7 +218,43 @@ callbacks. Open/view actions extract the selected MIME part to
 `attach.incoming.cache_dir`, build a structured attachment object, then resolve
 open or view rules. Save actions still write directly to the user-selected path.
 
-Rules can be customized with patch tables:
+For everyday customization, use the `attachments` shorthand. Rules listed in
+`attachments.open` and `attachments.view` are tried before the defaults:
+
+```lua
+require('notmuch').setup({
+    attachments = {
+        open = {
+            {
+                name = 'pdf-zathura',
+                match = { ext = 'pdf' },
+                command = { 'zathura', '$path' },
+                detach = true,
+                fallback = 'Could not open PDF with zathura.',
+            },
+        },
+        view = {
+            {
+                name = 'pdf',
+                match = { content_type = 'application/pdf' },
+                commands = {
+                    { 'pdftotext', '-raw', '$path', '-' },
+                },
+                filetype = 'text',
+                fallback = 'Install pdftotext to preview PDFs.',
+            },
+        },
+        window = {
+            width = 0.9,
+            height = 0.9,
+            border = 'rounded',
+        },
+    },
+})
+```
+
+Advanced users can still use `attach.incoming.open.rules` and
+`attach.incoming.view.rules` directly as patch tables:
 
 - `prepend`: try rules before defaults;
 - `append`: try rules after defaults;
@@ -241,30 +278,6 @@ require('notmuch').setup({
                             },
                             filetype = 'text',
                             fallback = 'Install pdftotext to preview PDFs.',
-                        },
-                    },
-                },
-            },
-        },
-    },
-})
-```
-
-Example: prepend a custom external opener for PDFs while keeping defaults as
-fallbacks:
-
-```lua
-require('notmuch').setup({
-    attach = {
-        incoming = {
-            open = {
-                rules = {
-                    prepend = {
-                        {
-                            name = 'pdf-zathura',
-                            match = { ext = 'pdf' },
-                            command = { 'zathura', '$path' },
-                            detach = true,
                         },
                     },
                 },

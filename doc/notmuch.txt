@@ -362,46 +362,81 @@ option will be listed with its default value.
   Default value:
     `"buffer"`
 
-*attach.incoming.cache_dir*
-  Cache directory used when opening or viewing received-message attachments.
-  Open/view actions extract the selected MIME part here before rule execution.
-  Save actions still write directly to the user-selected destination.
+*attachments.cache_dir*
+  Shorthand cache directory used when opening or viewing received-message
+  attachments. This maps to |attach.incoming.cache_dir|.
 
   Default value:
     `stdpath("cache")/notmuch.nvim/attachments`
 
-*attach.incoming.open.rules*
-  Patch table for received attachment open rules. Supported patch fields are
-  `prepend`, `append`, `replace`, and `disable`. The default `system` rule
-  prefers `vim.ui.open()` when available and falls back to the OS opener
-  command (`open`, `xdg-open`, or `start`).
+*attachments.open*
+  Shorthand list of received attachment open rules. These rules are prepended to
+  the default open rules, so they are tried before the built-in `system` rule.
+  Rule fields are the same as |attach.incoming.open.rules| entries.
 
   Example customization: >
 
     require('notmuch').setup({
-      attach = {
-        incoming = {
-          open = {
-            rules = {
-              prepend = {
-                {
-                  name = 'pdf-zathura',
-                  match = { ext = 'pdf' },
-                  command = { 'zathura', '$path' },
-                  detach = true,
-                },
-              },
-            },
+      attachments = {
+        open = {
+          {
+            name = 'pdf-zathura',
+            match = { ext = 'pdf' },
+            command = { 'zathura', '$path' },
+            detach = true,
+            fallback = 'Could not open PDF with zathura.',
           },
         },
       },
     })
 <
 
+*attachments.view*
+  Shorthand list of received attachment view rules. These rules are prepended to
+  the default view rules. Rule fields are the same as
+  |attach.incoming.view.rules| entries.
+
+  Example customization: >
+
+    require('notmuch').setup({
+      attachments = {
+        view = {
+          {
+            name = 'pdf',
+            match = { content_type = 'application/pdf' },
+            commands = { { 'pdftotext', '-raw', '$path', '-' } },
+            filetype = 'text',
+            fallback = 'Install pdftotext to preview PDFs.',
+          },
+        },
+      },
+    })
+<
+
+*attachments.window*
+  Shorthand floating window options for received attachment previews. This maps
+  to |attach.incoming.view.window|.
+
+  Default value: >
+    { type = 'float', width = 0.8, height = 0.8, border = 'rounded' }
+<
+
+*attach.incoming.cache_dir*
+  Advanced path for the cache directory used when opening or viewing
+  received-message attachments. Open/view actions extract the selected MIME part
+  here before rule execution. Save actions still write directly to the
+  user-selected destination.
+
+*attach.incoming.open.rules*
+  Advanced patch table for received attachment open rules. Supported patch
+  fields are `prepend`, `append`, `replace`, and `disable`. The default `system`
+  rule prefers `vim.ui.open()` when available and falls back to the OS opener
+  command (`open`, `xdg-open`, or `start`).
+
 *attach.incoming.view.rules*
-  Patch table for received attachment view rules. Default rules support HTML,
-  PDF, images, Office documents, Markdown, archives, text, and binary fallback
-  previews. Rules are patched with `prepend`, `append`, `replace`, and
+  Advanced patch table for received attachment view rules. Default rules support
+  HTML, PDF, images, Office documents, Markdown, archives, text, and binary
+  fallback previews. Rules are patched with `prepend`, `append`, `replace`, and
   `disable`.
 
   Example replacing the PDF rule: >
@@ -428,11 +463,7 @@ option will be listed with its default value.
 <
 
 *attach.incoming.view.window*
-  Floating window options for received attachment previews.
-
-  Default value: >
-    { type = 'float', width = 0.8, height = 0.8, border = 'rounded' }
-<
+  Advanced path for floating window options for received attachment previews.
 
 *keymaps*
   Keymap configuration table where you can override plugin defaults for all
