@@ -49,7 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `:AttachList`
   - `:AttachOpen`
 - New `drafts.auto_open_attachment_window` option to control whether draft attachment scratch windows open automatically
-- Rule-based received attachment configuration under `attach.incoming` for cache-backed open/view behavior
+- Rule-based received attachment configuration for cache-backed open/view behavior:
+  - `attachments.open`, `attachments.view`, `attachments.window`, and `attachments.cache_dir` provide the primary user-facing shorthand
+  - `attach.incoming.open.rules` and `attach.incoming.view.rules` remain available as the advanced rule patch API
 
 ### Changed
 
@@ -72,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-- Removed top-level received attachment `open_handler` and `view_handler` configuration callbacks in favor of `attach.incoming.open.rules` and `attach.incoming.view.rules`
+- Removed top-level received attachment `open_handler` and `view_handler` configuration callbacks in favor of `attachments.open`/`attachments.view` rules, with `attach.incoming.*` available for advanced patching
 - Removed the legacy `lua/notmuch/handlers.lua` callback implementation
 
 ### Fixed
