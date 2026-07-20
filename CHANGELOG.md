@@ -11,14 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added StyLua formatter configuration, Makefile format/lint targets, and a GitHub Actions formatting check.
 - Added configurable `send.send_mode` with `terminal` and `background` modes for sending mail through `msmtp`.
+- Rule-based received attachment configuration for cache-backed open/view behavior:
+  - `attachments.open`, `attachments.view`, `attachments.window`, and `attachments.cache_dir` provide the primary user-facing shorthand
+  - `attach.incoming.open.rules` and `attach.incoming.view.rules` remain available as the advanced rule patch API
 
 ### Changed
 
 - Replaced deprecated `vim.loop` usage with `vim.uv` for Neovim libuv APIs.
+- Received attachment open/view actions now use deterministic cache extraction and rule registries instead of top-level handler callbacks.
+- The default received attachment opener now prefers `vim.ui.open()` when available and falls back to the OS opener command.
 
 ### Removed
 
 - Removed the unused internal `notmuch.float` module. Floating attachment viewing is handled directly by the attachment viewer.
+- Removed top-level received attachment `open_handler` and `view_handler` configuration callbacks in favor of `attachments.open`/`attachments.view` rules, with `attach.incoming.*` available for advanced patching.
+- Removed the legacy `lua/notmuch/handlers.lua` callback implementation.
 
 ## [0.4.0] - 2026-07-12
 
@@ -49,9 +56,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `:AttachList`
   - `:AttachOpen`
 - New `drafts.auto_open_attachment_window` option to control whether draft attachment scratch windows open automatically
-- Rule-based received attachment configuration for cache-backed open/view behavior:
-  - `attachments.open`, `attachments.view`, `attachments.window`, and `attachments.cache_dir` provide the primary user-facing shorthand
-  - `attach.incoming.open.rules` and `attach.incoming.view.rules` remain available as the advanced rule patch API
 
 ### Changed
 
@@ -69,13 +73,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `notmuch.attach.state` owns canonical draft attachment state
   - `notmuch.attach.scratch` owns the draft attachment scratch window
   - `notmuch.attach.parts` owns received-message MIME part listing/opening/saving
-- Received attachment open/view actions now use deterministic cache extraction and rule registries instead of top-level handler callbacks
-- The default received attachment opener now prefers `vim.ui.open()` when available and falls back to the OS opener command
-
-### Removed
-
-- Removed top-level received attachment `open_handler` and `view_handler` configuration callbacks in favor of `attachments.open`/`attachments.view` rules, with `attach.incoming.*` available for advanced patching
-- Removed the legacy `lua/notmuch/handlers.lua` callback implementation
 
 ### Fixed
 
