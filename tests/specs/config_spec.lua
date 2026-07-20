@@ -157,6 +157,84 @@ return {
     end,
   },
   {
+    name = "config.setup maps attachment shorthand to incoming rule config",
+    run = function()
+      local config = require("notmuch.config")
+      with_mocked_notmuch_config({
+        ["database.path"] = "/tmp/notmuch-db",
+        ["user.name"] = "Tester",
+        ["user.primary_email"] = "tester@example.com",
+      }, function()
+        H.eq(true, config.setup({
+          attachments = {
+            cache_dir = "~/notmuch-shorthand-cache",
+            open = {
+              {
+                name = "pdf-firefox",
+                match = { ext = "pdf" },
+                command = { "firefox", "$path" },
+                detach = true,
+                fallback = "Could not open PDF with Firefox",
+              },
+            },
+            view = {
+              {
+                name = "pdf-text",
+                match = { content_type = "application/pdf" },
+                commands = {
+                  { "pdftotext", "-raw", "$path", "-" },
+                },
+                filetype = "text",
+                fallback = "Install pdftotext to preview PDFs.",
+              },
+            },
+            window = {
+              width = 0.9,
+              height = 0.7,
+              border = "single",
+            },
+          },
+        }))
+
+        local incoming = config.options.attach.incoming
+        H.eq(vim.fn.expand("~/notmuch-shorthand-cache"), incoming.cache_dir)
+
+        local open_rule = incoming.open.rules.prepend[1]
+        H.eq("pdf-firefox", open_rule.name)
+        H.same({ ext = "pdf" }, open_rule.match)
+        H.same({ "firefox", "$path" }, open_rule.command)
+        H.eq(true, open_rule.detach)
+        H.eq("Could not open PDF with Firefox", open_rule.fallback)
+
+        local view_rule = incoming.view.rules.prepend[1]
+        H.eq("pdf-text", view_rule.name)
+        H.same({ content_type = "application/pdf" }, view_rule.match)
+        H.same({ "pdftotext", "-raw", "$path", "-" }, view_rule.commands[1])
+        H.eq("text", view_rule.filetype)
+        H.eq("Install pdftotext to preview PDFs.", view_rule.fallback)
+
+        H.eq(0.9, incoming.view.window.width)
+        H.eq(0.7, incoming.view.window.height)
+        H.eq("single", incoming.view.window.border)
+      end)
+    end,
+  },
+  {
+    name = "config.setup does not expose legacy incoming attachment handlers by default",
+    run = function()
+      local config = require("notmuch.config")
+      with_mocked_notmuch_config({
+        ["database.path"] = "/tmp/notmuch-db",
+        ["user.name"] = "Tester",
+        ["user.primary_email"] = "tester@example.com",
+      }, function()
+        H.eq(true, config.setup({}))
+        H.eq(nil, config.options.open_handler)
+        H.eq(nil, config.options.view_handler)
+      end)
+    end,
+  },
+  {
     name = "config.setup expands incoming attachment cache directory",
     run = function()
       local config = require("notmuch.config")
