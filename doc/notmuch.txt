@@ -372,7 +372,9 @@ option will be listed with its default value.
 *attachments.open*
   Shorthand list of received attachment open rules. These rules are prepended to
   the default open rules, so they are tried before the built-in `system` rule.
-  Rule fields are the same as |attach.incoming.open.rules| entries.
+  Rule fields are the same as |attach.incoming.open.rules| entries. The old
+  received attachment `open_handler` setup callback has been removed; configure
+  open rules here instead.
 
   Example customization: >
 
@@ -394,7 +396,9 @@ option will be listed with its default value.
 *attachments.view*
   Shorthand list of received attachment view rules. These rules are prepended to
   the default view rules. Rule fields are the same as
-  |attach.incoming.view.rules| entries.
+  |attach.incoming.view.rules| entries. The old received attachment
+  `view_handler` setup callback has been removed; configure view rules here
+  instead.
 
   Example customization: >
 

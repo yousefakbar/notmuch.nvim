@@ -219,7 +219,9 @@ callbacks. Open/view actions extract the selected MIME part to
 open or view rules. Save actions still write directly to the user-selected path.
 
 For everyday customization, use the `attachments` shorthand. Rules listed in
-`attachments.open` and `attachments.view` are tried before the defaults:
+`attachments.open` and `attachments.view` are tried before the defaults. The old
+received attachment `open_handler` and `view_handler` setup callbacks have been
+removed; use open/view rules instead.
 
 ```lua
 require('notmuch').setup({
