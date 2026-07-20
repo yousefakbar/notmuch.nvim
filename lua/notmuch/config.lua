@@ -108,6 +108,61 @@ C.defaults = function()
   return defaults
 end
 
+local function normalize_attachments_config(options)
+  local attachments = options.attachments
+  if type(attachments) ~= 'table' then
+    return
+  end
+
+  options.attach = options.attach or {}
+  options.attach.incoming = options.attach.incoming or {}
+
+  local incoming = options.attach.incoming
+
+  if attachments.cache_dir then
+    incoming.cache_dir = attachments.cache_dir
+  end
+
+  if attachments.open then
+    incoming.open = incoming.open or {}
+    incoming.open.rules = incoming.open.rules or {}
+    incoming.open.rules.prepend = incoming.open.rules.prepend or {}
+
+    if vim.islist(attachments.open) then
+      vim.list_extend(incoming.open.rules.prepend, attachments.open)
+    else
+      vim.notify(
+        'notmuch.nvim: attachments.open must be a list of incoming attachment open rules',
+        vim.log.levels.WARN
+      )
+    end
+  end
+
+  if attachments.view then
+    incoming.view = incoming.view or {}
+    incoming.view.rules = incoming.view.rules or {}
+    incoming.view.rules.prepend = incoming.view.rules.prepend or {}
+
+    if vim.islist(attachments.view) then
+      vim.list_extend(incoming.view.rules.prepend, attachments.view)
+    else
+      vim.notify(
+        'notmuch.nvim: attachments.view must be a list of incoming attachment view rules',
+        vim.log.levels.WARN
+      )
+    end
+  end
+
+  if attachments.window then
+    incoming.view = incoming.view or {}
+    incoming.view.window = vim.tbl_deep_extend(
+      'force',
+      incoming.view.window or {},
+      attachments.window
+    )
+  end
+end
+
 -- Setup config for `notmuch.nvim`
 --
 -- This function sets up the configuration options which control the behavior of
@@ -129,6 +184,8 @@ C.setup = function(opts)
     )
     return false
   end
+
+  normalize_attachments_config(options)
 
   -- If `notmuch_db_path` is set by user, expand it in case of tildes, etc.
   if options.notmuch_db_path then
