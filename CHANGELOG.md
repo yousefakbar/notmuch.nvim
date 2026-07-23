@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added StyLua formatter configuration, Makefile format/lint targets, and a GitHub Actions formatting check.
+
 ### Changed
 
 - Replaced deprecated `vim.loop` usage with `vim.uv` for Neovim libuv APIs.
