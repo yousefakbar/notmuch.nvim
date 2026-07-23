@@ -33,5 +33,12 @@ jobs:
           nvim --version | head -n 3
           notmuch --version
 
+      - name: Check Lua formatting
+        uses: JohnnyMorganz/stylua-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
+          args: --check lua ftplugin tests
+
       - name: Run test suite
         run: make check
