@@ -3,7 +3,9 @@ local H = dofile("tests/helpers.lua")
 local function map_rhs(mode, lhs, buf)
   local maps = vim.api.nvim_buf_get_keymap(buf, mode)
   for _, m in ipairs(maps) do
-    if m.lhs == lhs then return m.rhs or m.callback end
+    if m.lhs == lhs then
+      return m.rhs or m.callback
+    end
   end
 end
 
@@ -47,16 +49,28 @@ return {
       local calls = {}
 
       local ok, err = pcall(function()
-        nm.search_terms = function(query) calls.search = query end
+        nm.search_terms = function(query)
+          calls.search = query
+        end
         nm.count = function(query)
           calls.count = query
           return "counted " .. query
         end
-        refresh.refresh_hello_buffer = function() calls.refresh = true end
-        sync.sync_maildir = function() calls.sync = true end
-        send.compose = function() calls.compose = true end
-        send.select_draft = function() calls.drafts = true end
-        vim.notify = function(message) calls.notify = message end
+        refresh.refresh_hello_buffer = function()
+          calls.refresh = true
+        end
+        sync.sync_maildir = function()
+          calls.sync = true
+        end
+        send.compose = function()
+          calls.compose = true
+        end
+        send.select_draft = function()
+          calls.drafts = true
+        end
+        vim.notify = function(message)
+          calls.notify = message
+        end
 
         local buf = vim.api.nvim_create_buf(true, true)
         vim.api.nvim_win_set_buf(0, buf)
@@ -98,7 +112,9 @@ return {
       send.select_draft = original.select_draft
       vim.notify = original.notify
 
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {
@@ -153,12 +169,24 @@ return {
       local calls = {}
 
       local ok, err = pcall(function()
-        nm.show_thread = function() calls.open = true end
-        refresh.refresh_search_buffer = function() calls.refresh = true end
-        nm.reverse_sort_threads = function() calls.sort = true end
-        sync.sync_maildir = function() calls.sync = true end
-        send.compose = function() calls.compose = true end
-        delete.purge_del = function() calls.purge = true end
+        nm.show_thread = function()
+          calls.open = true
+        end
+        refresh.refresh_search_buffer = function()
+          calls.refresh = true
+        end
+        nm.reverse_sort_threads = function()
+          calls.sort = true
+        end
+        sync.sync_maildir = function()
+          calls.sync = true
+        end
+        send.compose = function()
+          calls.compose = true
+        end
+        delete.purge_del = function()
+          calls.purge = true
+        end
 
         local buf = vim.api.nvim_create_buf(true, true)
         vim.api.nvim_win_set_buf(0, buf)
@@ -198,7 +226,9 @@ return {
       send.compose = original.compose
       delete.purge_del = original.purge_del
 
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {
@@ -255,7 +285,9 @@ return {
       tag.thread_rm_tag = original.rm
       tag.thread_toggle_tag = original.toggle
 
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {
@@ -307,13 +339,27 @@ return {
       local calls = {}
 
       local ok, err = pcall(function()
-        attach.get_attachments_from_cursor_msg = function() calls.attach = true end
-        refresh.refresh_thread_buffer = function() calls.refresh = true end
-        send.compose = function() calls.compose = true end
-        send.reply = function() calls.reply = true end
-        tag.msg_add_tag = function(tags) calls.add = tags end
-        tag.msg_rm_tag = function(tags) calls.rm = tags end
-        tag.msg_toggle_tag = function(tags) calls.toggle = tags end
+        attach.get_attachments_from_cursor_msg = function()
+          calls.attach = true
+        end
+        refresh.refresh_thread_buffer = function()
+          calls.refresh = true
+        end
+        send.compose = function()
+          calls.compose = true
+        end
+        send.reply = function()
+          calls.reply = true
+        end
+        tag.msg_add_tag = function(tags)
+          calls.add = tags
+        end
+        tag.msg_rm_tag = function(tags)
+          calls.rm = tags
+        end
+        tag.msg_toggle_tag = function(tags)
+          calls.toggle = tags
+        end
 
         local buf = vim.api.nvim_create_buf(true, true)
         vim.api.nvim_win_set_buf(0, buf)
@@ -352,7 +398,9 @@ return {
       tag.msg_rm_tag = original.rm
       tag.msg_toggle_tag = original.toggle
 
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {
@@ -394,7 +442,9 @@ return {
         end, 1000)
       end)
       attach.save_attachment_part = old_save
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
 }

@@ -12,7 +12,9 @@ local function with_mocked_notmuch_config(values, fn)
   end
   local ok, err = pcall(fn)
   vim.fn.system = old_system
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 return {
@@ -22,7 +24,9 @@ return {
       local config = require("notmuch.config")
       local notes = {}
       local old_notify = vim.notify
-      vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+      vim.notify = function(msg, level)
+        table.insert(notes, { msg = msg, level = level })
+      end
 
       with_mocked_notmuch_config({
         ["database.path"] = "/tmp/notmuch-db",
@@ -31,15 +35,18 @@ return {
       }, function()
         local open_handler = function() end
         local view_handler = function() end
-        H.eq(true, config.setup({
-          notmuch_db_path = "~/custom-db",
-          maildir_sync_cmd = "true",
-          open_handler = open_handler,
-          view_handler = view_handler,
-          sync = { sync_mode = "background" },
-          drafts = { auto_open_attachment_window = true },
-          keymaps = { sendmail = "<F5>" },
-        }))
+        H.eq(
+          true,
+          config.setup({
+            notmuch_db_path = "~/custom-db",
+            maildir_sync_cmd = "true",
+            open_handler = open_handler,
+            view_handler = view_handler,
+            sync = { sync_mode = "background" },
+            drafts = { auto_open_attachment_window = true },
+            keymaps = { sendmail = "<F5>" },
+          })
+        )
         H.eq(vim.fn.expand("~/custom-db"), config.options.notmuch_db_path)
         H.eq("User <user@localhost>", config.options.from)
         H.eq(open_handler, config.options.open_handler)
@@ -75,7 +82,9 @@ return {
       local config = require("notmuch.config")
       local old_notify = vim.notify
       local notes = {}
-      vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+      vim.notify = function(msg, level)
+        table.insert(notes, { msg = msg, level = level })
+      end
 
       with_mocked_notmuch_config({
         ["database.path"] = false,
@@ -102,7 +111,9 @@ return {
       local config = require("notmuch.config")
       local old_setup = config.setup
       local ok, err = pcall(function()
-        config.setup = function() return false end
+        config.setup = function()
+          return false
+        end
         nm.setup({})
         config.setup = old_setup
 
@@ -121,7 +132,9 @@ return {
         suppress_deprecation_warning = true,
       })
 
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
 }

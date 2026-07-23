@@ -3,10 +3,14 @@ local H = dofile("tests/helpers.lua")
 local function with_current_message_id(id, fn)
   local thread = require("notmuch.thread")
   local old = thread.get_current_message_id
-  thread.get_current_message_id = function() return id end
+  thread.get_current_message_id = function()
+    return id
+  end
   local ok, err = pcall(fn)
   thread.get_current_message_id = old
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 local function attachment_buf(parts, name)
@@ -35,7 +39,9 @@ local function with_system_result(code, fn)
   end
   local ok, err = pcall(fn)
   vim.fn.system = old_system
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 local function silence_print(fn)
@@ -43,7 +49,9 @@ local function silence_print(fn)
   print = function() end
   local ok, err = pcall(fn)
   print = old_print
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 return {
@@ -59,11 +67,26 @@ return {
             ["content-type"] = "multipart/mixed",
             content = {
               { id = 1, ["content-type"] = "text/plain", ["content-length"] = 12 },
-              { id = 2, ["content-type"] = "multipart/alternative", content = {
-                { id = 3, ["content-type"] = "text/html", ["content-length"] = 34 },
-              } },
-              { id = 4, ["content-type"] = "application/pdf", filename = "doc.pdf", ["content-disposition"] = "attachment", ["content-length"] = 2048 },
-              { id = 5, ["content-type"] = "image/png", ["content-disposition"] = "inline", ["content-length"] = 1024 },
+              {
+                id = 2,
+                ["content-type"] = "multipart/alternative",
+                content = {
+                  { id = 3, ["content-type"] = "text/html", ["content-length"] = 34 },
+                },
+              },
+              {
+                id = 4,
+                ["content-type"] = "application/pdf",
+                filename = "doc.pdf",
+                ["content-disposition"] = "attachment",
+                ["content-length"] = 2048,
+              },
+              {
+                id = 5,
+                ["content-type"] = "image/png",
+                ["content-disposition"] = "inline",
+                ["content-length"] = 1024,
+              },
             },
           },
         },
@@ -121,7 +144,9 @@ return {
       vim.api.nvim_buf_set_name(existing, "id:dup")
       local old_notify = vim.notify
       local note
-      vim.notify = function(msg, level) note = { msg = msg, level = level } end
+      vim.notify = function(msg, level)
+        note = { msg = msg, level = level }
+      end
       with_current_message_id("dup", function()
         H.eq(nil, attach.get_attachments_from_cursor_msg())
       end)
@@ -138,7 +163,13 @@ return {
       local attach = require("notmuch.attach.parts")
       local dir = H.tmpdir()
       local parts = {
-        { id = 2, content_type = "application/pdf", filename = "unsafe/name.pdf", disposition = "attachment", size = 1 },
+        {
+          id = 2,
+          content_type = "application/pdf",
+          filename = "unsafe/name.pdf",
+          disposition = "attachment",
+          size = 1,
+        },
         { id = 3, content_type = "text/plain", filename = "", disposition = "inline", size = 1 },
       }
       local buf = attachment_buf(parts, "id:save-msg")
@@ -183,13 +214,22 @@ return {
       local empty_dir = H.tmpdir()
       local existing = H.write_file(dir .. "/doc.txt", "old")
       local missing_dir = dir .. "/missing"
-      local part = { id = 7, content_type = "text/plain", filename = "doc.txt", disposition = "attachment", size = 1 }
+      local part = {
+        id = 7,
+        content_type = "text/plain",
+        filename = "doc.txt",
+        disposition = "attachment",
+        size = 1,
+      }
       local buf = attachment_buf({ part }, "id:prompt-msg")
       vim.api.nvim_win_set_cursor(0, { 4, 0 })
 
-      local old_input, old_confirm, old_notify, old_system = vim.fn.input, vim.fn.confirm, vim.notify, vim.fn.system
+      local old_input, old_confirm, old_notify, old_system =
+        vim.fn.input, vim.fn.confirm, vim.notify, vim.fn.system
       local notes = {}
-      vim.notify = function(msg, level) notes[#notes + 1] = { msg = msg, level = level } end
+      vim.notify = function(msg, level)
+        notes[#notes + 1] = { msg = msg, level = level }
+      end
       local inputs = { "", missing_dir .. "/doc.txt", empty_dir, existing, existing }
       local confirms = { 2, 1 }
       local commands = {}
@@ -221,7 +261,8 @@ return {
       H.eq(existing, saved)
       H.eq(2, #commands)
 
-      vim.fn.input, vim.fn.confirm, vim.notify, vim.fn.system = old_input, old_confirm, old_notify, old_system
+      vim.fn.input, vim.fn.confirm, vim.notify, vim.fn.system =
+        old_input, old_confirm, old_notify, old_system
       vim.api.nvim_buf_delete(buf, { force = true })
     end,
   },
@@ -230,29 +271,43 @@ return {
     run = function()
       local attach = require("notmuch.attach.parts")
       local dir = H.tmpdir()
-      local part = { id = 8, content_type = "text/plain", filename = "blocked.txt", disposition = "attachment", size = 1 }
+      local part = {
+        id = 8,
+        content_type = "text/plain",
+        filename = "blocked.txt",
+        disposition = "attachment",
+        size = 1,
+      }
       local buf = attachment_buf({ part }, "id:blocked-msg")
       vim.api.nvim_win_set_cursor(0, { 4, 0 })
 
-      local old_input, old_notify, old_filewritable, old_system = vim.fn.input, vim.notify, vim.fn.filewritable, vim.fn.system
+      local old_input, old_notify, old_filewritable, old_system =
+        vim.fn.input, vim.notify, vim.fn.filewritable, vim.fn.system
       local note, ran_system
-      vim.fn.input = function() return dir .. "/blocked.txt" end
+      vim.fn.input = function()
+        return dir .. "/blocked.txt"
+      end
       vim.fn.filewritable = function(path)
-        if path == dir then return 0 end
+        if path == dir then
+          return 0
+        end
         return old_filewritable(path)
       end
       vim.fn.system = function(cmd)
         ran_system = cmd
         return old_system(cmd)
       end
-      vim.notify = function(msg, level) note = { msg = msg, level = level } end
+      vim.notify = function(msg, level)
+        note = { msg = msg, level = level }
+      end
 
       H.eq(nil, attach.save_attachment_part(nil, true))
       H.contains(note.msg, "Directory is not writable")
       H.eq(vim.log.levels.ERROR, note.level)
       H.eq(nil, ran_system)
 
-      vim.fn.input, vim.notify, vim.fn.filewritable, vim.fn.system = old_input, old_notify, old_filewritable, old_system
+      vim.fn.input, vim.notify, vim.fn.filewritable, vim.fn.system =
+        old_input, old_notify, old_filewritable, old_system
       vim.api.nvim_buf_delete(buf, { force = true })
     end,
   },
@@ -261,7 +316,13 @@ return {
     run = function()
       local attach = require("notmuch.attach.parts")
       local config = require("notmuch.config")
-      local part = { id = 9, content_type = "text/plain", filename = "view.txt", disposition = "attachment", size = 1 }
+      local part = {
+        id = 9,
+        content_type = "text/plain",
+        filename = "view.txt",
+        disposition = "attachment",
+        size = 1,
+      }
       local buf = attachment_buf({ part }, "id:handler-msg")
       vim.api.nvim_win_set_cursor(0, { 4, 0 })
 
@@ -271,8 +332,13 @@ return {
 
       local old_open, old_view = config.options.open_handler, config.options.view_handler
       local opened, viewed
-      config.options.open_handler = function(attachment) opened = attachment.path end
-      config.options.view_handler = function(attachment) viewed = attachment.path; return "viewed output" end
+      config.options.open_handler = function(attachment)
+        opened = attachment.path
+      end
+      config.options.view_handler = function(attachment)
+        viewed = attachment.path
+        return "viewed output"
+      end
 
       with_system_result(0, function()
         silence_print(function()

@@ -15,7 +15,9 @@ local function with_draft_root(fn)
 
   config.options.drafts = old_drafts
   pcall(vim.cmd, "silent! %bwipeout!")
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 return {
@@ -40,7 +42,10 @@ return {
         H.eq("notmuch-attach-draft", vim.bo[scratch_buf].filetype)
         H.eq(scratch_buf, vim.api.nvim_buf_get_var(draft_buf, "notmuch_attachment_scratch_buf"))
         H.eq(draft_buf, vim.api.nvim_buf_get_var(scratch_buf, "notmuch_parent_draft_buf"))
-        H.same({ vim.fn.fnamemodify(file1, ":p") }, vim.api.nvim_buf_get_lines(scratch_buf, 0, -1, false))
+        H.same(
+          { vim.fn.fnamemodify(file1, ":p") },
+          vim.api.nvim_buf_get_lines(scratch_buf, 0, -1, false)
+        )
 
         vim.api.nvim_buf_set_lines(scratch_buf, 0, -1, false, { file2, "", file2 })
         H.eq(true, scratch.sync_from_scratch(scratch_buf))
@@ -68,7 +73,10 @@ return {
         local scratch_buf = scratch.open(draft_buf)
         local ok = state.add(draft_buf, file1)
         H.eq(true, ok)
-        H.same({ vim.fn.fnamemodify(file1, ":p") }, vim.api.nvim_buf_get_lines(scratch_buf, 0, -1, false))
+        H.same(
+          { vim.fn.fnamemodify(file1, ":p") },
+          vim.api.nvim_buf_get_lines(scratch_buf, 0, -1, false)
+        )
 
         vim.api.nvim_buf_set_lines(scratch_buf, 0, -1, false, { file2 })
         H.eq(true, scratch.sync_open(draft_buf))

@@ -22,53 +22,63 @@ a.run_notmuch_search = function(search, buf, on_complete)
 
   -- Spawn subprocess using vim.uv
   local handle
-  handle = vim.uv.spawn("notmuch", {
-    args = {"search", search},
-    stdio = {nil, stdout, stderr}
-  }, vim.schedule_wrap(function()
-    -- Close the pipes and handle
-    stdout:close()
-    stderr:close()
-    handle:close()
+  handle = vim.uv.spawn(
+    "notmuch",
+    {
+      args = { "search", search },
+      stdio = { nil, stdout, stderr },
+    },
+    vim.schedule_wrap(function()
+      -- Close the pipes and handle
+      stdout:close()
+      stderr:close()
+      handle:close()
 
-    -- Call the completion callback
-    on_complete()
-  end))
+      -- Call the completion callback
+      on_complete()
+    end)
+  )
 
   -- Helper variable for maintaining incomplete lines between reads
   local partial_data = ""
 
   -- Read data from stdout and write it to the buffer
-  vim.uv.read_start(stdout, vim.schedule_wrap(function(_, data)
-    if data then
-      -- Combine earlier incomplete chunk with newest read
-      partial_data = partial_data .. data
-      local lines = vim.split(partial_data, '\n')
-      -- collect incomplete line at the tail of lines
-      partial_data = table.remove(lines)
+  vim.uv.read_start(
+    stdout,
+    vim.schedule_wrap(function(_, data)
+      if data then
+        -- Combine earlier incomplete chunk with newest read
+        partial_data = partial_data .. data
+        local lines = vim.split(partial_data, "\n")
+        -- collect incomplete line at the tail of lines
+        partial_data = table.remove(lines)
 
-      -- Check if buffer is still valid before writing
-      -- This prevents errors when buffer is deleted (e.g., during refresh)
-      if not vim.api.nvim_buf_is_valid(buf) then
-        handle:kill()
-        return
+        -- Check if buffer is still valid before writing
+        -- This prevents errors when buffer is deleted (e.g., during refresh)
+        if not vim.api.nvim_buf_is_valid(buf) then
+          handle:kill()
+          return
+        end
+
+        -- Paste lines into the tail of `buf`
+        vim.bo[buf].modifiable = true
+        vim.api.nvim_buf_set_lines(buf, -1, -1, false, lines)
+        vim.bo[buf].modifiable = false
       end
-
-      -- Paste lines into the tail of `buf`
-      vim.bo[buf].modifiable = true
-      vim.api.nvim_buf_set_lines(buf, -1, -1, false, lines)
-      vim.bo[buf].modifiable = false
-    end
-  end))
+    end)
+  )
 
   -- Log errors from stderr
-  vim.uv.read_start(stderr, vim.schedule_wrap(function(err, data)
-    if err then
-      vim.notify("ERROR: " .. err)
-    elseif data then
-      vim.notify("ERROR: " .. data)
-    end
-  end))
+  vim.uv.read_start(
+    stderr,
+    vim.schedule_wrap(function(err, data)
+      if err then
+        vim.notify("ERROR: " .. err)
+      elseif data then
+        vim.notify("ERROR: " .. data)
+      end
+    end)
+  )
 end
 
 return a

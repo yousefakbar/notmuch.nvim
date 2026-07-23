@@ -14,7 +14,9 @@ local function with_draft_env(fn)
 
   config.options.drafts = old_drafts
   pcall(vim.cmd, "silent! %bwipeout!")
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 return {
@@ -22,9 +24,13 @@ return {
     name = "draft creates, loads, lists, and filters compose drafts",
     run = function()
       with_draft_env(function(draft, config)
-        local one = draft.create_compose_draft({ "From: a@example.com", "Subject: First", "", "Body" })
+        local one =
+          draft.create_compose_draft({ "From: a@example.com", "Subject: First", "", "Body" })
         H.ok(one, "expected compose draft")
-        H.matches(one.eml_path, "/compose/compose%-%d%d%d%d%d%d%d%dT%d%d%d%d%d%dZ%-%x%x%x%x%x%x%x%x%.eml$")
+        H.matches(
+          one.eml_path,
+          "/compose/compose%-%d%d%d%d%d%d%d%dT%d%d%d%d%d%dZ%-%x%x%x%x%x%x%x%x%.eml$"
+        )
         H.ok(vim.uv.fs_stat(one.eml_path), "missing eml")
         H.ok(vim.uv.fs_stat(one.json_path), "missing json sidecar")
         H.eq("compose", one.metadata.kind)
@@ -62,7 +68,8 @@ return {
         H.eq(message_id, reply.metadata.message_id)
         H.eq("Re: Test", reply.subject)
 
-        local sent_reply = draft.create_reply_draft(message_id, { "Subject: Sent Reply", "", "sent reply" })
+        local sent_reply =
+          draft.create_reply_draft(message_id, { "Subject: Sent Reply", "", "sent reply" })
         draft.mark_sent(sent_reply.json_path)
 
         local replies = draft.list_reply_drafts(message_id)

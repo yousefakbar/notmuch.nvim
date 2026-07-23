@@ -26,7 +26,9 @@ return {
       local old_search_terms = nm.search_terms
       local calls = {}
       local ok, err = pcall(function()
-        nm.search_terms = function(query) table.insert(calls, query) end
+        nm.search_terms = function(query)
+          table.insert(calls, query)
+        end
 
         vim.cmd("Inbox")
         H.eq("tag:inbox", calls[#calls])
@@ -36,10 +38,15 @@ return {
 
         local completions = vim.fn.getcompletion("Inbox ", "cmdline")
         H.ok(#completions > 0, "expected Inbox command address completions")
-        H.ok(vim.tbl_contains(completions, "Keith Packard <keithp@keithp.com>"), "expected notmuch address completion")
+        H.ok(
+          vim.tbl_contains(completions, "Keith Packard <keithp@keithp.com>"),
+          "expected notmuch address completion"
+        )
       end)
       nm.search_terms = old_search_terms
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {
@@ -98,7 +105,13 @@ return {
       local buf = vim.api.nvim_create_buf(true, true)
       vim.api.nvim_win_set_buf(0, buf)
       vim.bo.modifiable = true
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "Hints: keep", "thread:1", "thread:2", "thread:3" })
+      vim.api.nvim_buf_set_lines(
+        buf,
+        0,
+        -1,
+        false,
+        { "Hints: keep", "thread:1", "thread:2", "thread:3" }
+      )
       vim.bo.filetype = "notmuch-threads"
       require("notmuch").reverse_sort_threads()
       H.same({ "Hints: keep", "thread:3", "thread:2", "thread:1" }, H.current_lines())
@@ -143,11 +156,19 @@ return {
             messages = { { id = "m1", start_line = 3, end_line = 6 } },
           }
         end
-        thread.setup_cursor_tracking = function(buf) tracked_buf = buf end
+        thread.setup_cursor_tracking = function(buf)
+          tracked_buf = buf
+        end
 
         local search_buf = vim.api.nvim_create_buf(true, true)
         vim.api.nvim_win_set_buf(0, search_buf)
-        vim.api.nvim_buf_set_lines(search_buf, 0, -1, false, { "Hints: test", "thread:abc123 rendered subject" })
+        vim.api.nvim_buf_set_lines(
+          search_buf,
+          0,
+          -1,
+          false,
+          { "Hints: test", "thread:abc123 rendered subject" }
+        )
         vim.api.nvim_win_set_cursor(0, { 2, 0 })
 
         H.eq(nil, nm.show_thread())
@@ -171,7 +192,9 @@ return {
 
       thread.show_thread = old_show_thread
       thread.setup_cursor_tracking = old_setup_cursor_tracking
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {

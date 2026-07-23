@@ -35,7 +35,7 @@
 --- `vim.b.notmuch_status`          : Formatted string for quick statusline
 
 local T = {}
-local config = require('notmuch.config')
+local config = require("notmuch.config")
 
 --------------------------------------------------------------------------------
 -- PRIVATE: Thread parsing helpers
@@ -75,7 +75,7 @@ local function indent_line(line, depth)
   if depth == 0 then
     return line
   end
-  return string.rep('────', depth) .. line
+  return string.rep("────", depth) .. line
 end
 
 --- Formats message headers into buffer lines
@@ -92,7 +92,7 @@ local function format_headers(msg, depth)
     if not s or s == "" then
       return nil
     end
-    return s:gsub('\r?\n%S*', ' ')
+    return s:gsub("\r?\n%S*", " ")
   end
 
   -- Extract header values with fallbacks
@@ -128,7 +128,10 @@ local function format_headers(msg, depth)
 
   -- Add attachment indicator if applicable
   if has_attach then
-    table.insert(lines, string.format("📎 %d attachment%s", attach_count, attach_count > 1 and "s" or ""))
+    table.insert(
+      lines,
+      string.format("📎 %d attachment%s", attach_count, attach_count > 1 and "s" or "")
+    )
   end
 
   -- Blank link after headers
@@ -142,16 +145,18 @@ end
 --- @return table rendered Rendered HTML ready for buffer display
 local function render_html(raw)
   -- Check if `w3m` is installed and in $PATH for user (otherwise render fails)
-  if vim.fn.executable('w3m') ~= 1 then
+  if vim.fn.executable("w3m") ~= 1 then
     return { "[ w3m not installed - press 'a' to view attachments ]" }
   end
 
   -- Run w3m to render the `raw` HTML content
   local ok, res = pcall(function()
-    return vim.system({ 'w3m', '-T', 'text/html', '-dump' }, {
-      text = true,
-      stdin = raw,
-    }):wait()
+    return vim
+      .system({ "w3m", "-T", "text/html", "-dump" }, {
+        text = true,
+        stdin = raw,
+      })
+      :wait()
   end)
 
   -- Check for error. Return UX hint rather than vim error
@@ -160,7 +165,7 @@ local function render_html(raw)
   end
 
   -- Return table of rendered HTML with trimmed empty lines at start/end
-  return vim.split(res.stdout or '', '\n', { plain = true, trimempty = true })
+  return vim.split(res.stdout or "", "\n", { plain = true, trimempty = true })
 end
 
 --- Processes the MIME body parts and adds them to buffer lines
@@ -178,30 +183,34 @@ local function process_body_parts(body)
 
   local function walk(parts, parent_type)
     for _, part in ipairs(parts) do
-      local content_type = part['content-type'] or ''
+      local content_type = part["content-type"] or ""
 
-      if content_type:match('^multipart/') then
+      if content_type:match("^multipart/") then
         -- Multipart envelope -> recurse through child parts
         walk(part.content, content_type)
       elseif part.filename then
         -- Definitely an attachment -> display to user and hint for viewing
-        table.insert(lines, string.format(
-          "[ 📎 %s (%s) - press 'a' to view attachments ]",
-          part.filename, content_type
-        ))
+        table.insert(
+          lines,
+          string.format(
+            "[ 📎 %s (%s) - press 'a' to view attachments ]",
+            part.filename,
+            content_type
+          )
+        )
         table.insert(lines, "")
-      elseif content_type == 'text/plain' and part.content then
-        if parent_type ~= 'multipart/alternative' or not config.options.render_html_body then
+      elseif content_type == "text/plain" and part.content then
+        if parent_type ~= "multipart/alternative" or not config.options.render_html_body then
           -- Always show inline plain text (including signatures, etc.)
-          for _, line in ipairs(vim.split(part.content, '\n', { plain = true })) do
+          for _, line in ipairs(vim.split(part.content, "\n", { plain = true })) do
             table.insert(lines, line)
           end
           table.insert(lines, "")
         end
-      elseif content_type == 'text/html' and part.content then
+      elseif content_type == "text/html" and part.content then
         if not config.options.render_html_body then
           -- User prefers plain text output. Hide HTML content with hint marker
-          if parent_type == 'multipart/alternative' then
+          if parent_type == "multipart/alternative" then
             table.insert(lines, "[ text/html (alternative) - press 'a' to view ]")
             table.insert(lines, "")
           else
@@ -214,7 +223,10 @@ local function process_body_parts(body)
           table.insert(lines, "")
         end
       elseif part.content then
-        table.insert(lines, string.format("[ %s (inline) - press 'a' to view attachments ]", content_type))
+        table.insert(
+          lines,
+          string.format("[ %s (inline) - press 'a' to view attachments ]", content_type)
+        )
         table.insert(lines, "")
       end
     end
@@ -309,7 +321,9 @@ end
 local function get_message_at_line(line)
   line = line or vim.api.nvim_win_get_cursor(0)[1]
   local messages = vim.b.notmuch_messages
-  if not messages then return nil, nil end
+  if not messages then
+    return nil, nil
+  end
 
   -- Find corresponding message (`line` is within message start/end bounds)
   for i, msg in ipairs(messages) do
@@ -400,7 +414,7 @@ end
 --- @param bufnr number Buffer number
 function T.setup_cursor_tracking(bufnr)
   -- Updates the current message in buffer local variable with each CursorMoved
-  vim.api.nvim_create_autocmd('CursorMoved', {
+  vim.api.nvim_create_autocmd("CursorMoved", {
     buffer = bufnr,
     callback = update_current_message,
   })
@@ -419,18 +433,21 @@ end
 --- @return table thread_metadata Thread metadata to be exported to buffer var
 T.show_thread = function(threadid)
   -- Run `notmuch show` with JSON format
-  local res = vim.system({
-    'notmuch', 'show',
-    '--format=json',
-    '--exclude=false',
-    '--include-html',
-    'thread:' .. threadid
-  }):wait()
+  local res = vim
+    .system({
+      "notmuch",
+      "show",
+      "--format=json",
+      "--exclude=false",
+      "--include-html",
+      "thread:" .. threadid,
+    })
+    :wait()
 
   -- Check for `notmuch show` execution error
   if res.code ~= 0 then
     vim.notify(
-      'Error running notmuch show: ' .. (res.stderr or 'unknown error'),
+      "Error running notmuch show: " .. (res.stderr or "unknown error"),
       vim.log.levels.ERROR
     )
     return { "Error: Could not fetch thread data" }, {}
@@ -444,10 +461,7 @@ T.show_thread = function(threadid)
   -- Parse/decode JSON output
   local ok, json = pcall(vim.json.decode, res.stdout)
   if not ok then
-    vim.notify(
-      'Failed to parse thread JSON: ' .. tostring(json),
-      vim.log.levels.ERROR
-    )
+    vim.notify("Failed to parse thread JSON: " .. tostring(json), vim.log.levels.ERROR)
     return { "Error: Could not parse thread data" }, {}
   end
 
@@ -467,7 +481,7 @@ T.show_thread = function(threadid)
       date_relative = root_msg.date_relative or "",
       message_count = 0,
       tags = {},
-      _tags_set = {},     -- temporary: set for deduplication
+      _tags_set = {}, -- temporary: set for deduplication
       authors = {},
       _authors_seen = {}, -- temporary: set for deduplication
     },

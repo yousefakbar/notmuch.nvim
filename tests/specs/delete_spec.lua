@@ -41,7 +41,9 @@ local function with_mock_cnotmuch(state, fn)
 
   local ok, err = pcall(fn)
   package.loaded["notmuch.cnotmuch"] = old_loaded
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 local function map_callback(lhs)
@@ -57,7 +59,9 @@ local function silence_print(fn)
   print = function() end
   local ok, err = pcall(fn)
   print = old_print
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 return {
@@ -85,7 +89,10 @@ return {
 
       H.same({ "del" }, t1.added)
       H.same({ "inbox" }, t1.removed)
-      H.same({ "Hints: delete", "thread:def  today [1/1] other" }, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
+      H.same(
+        { "Hints: delete", "thread:def  today [1/1] other" },
+        vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      )
       H.eq(false, vim.bo.modifiable)
       H.same({ "thread:abc", "thread:abc" }, state.queries)
       H.eq(2, state.closed)
@@ -121,7 +128,10 @@ return {
       H.same({ "del" }, t2.added)
       H.same({ "inbox" }, t1.removed)
       H.same({ "inbox" }, t2.removed)
-      H.same({ "Hints: delete", "thread:ghi  today [1/1] keep" }, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
+      H.same(
+        { "Hints: delete", "thread:ghi  today [1/1] keep" },
+        vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      )
       H.eq(false, vim.bo.modifiable)
       H.eq(2, state.closed)
 
@@ -140,14 +150,20 @@ return {
       local old_command = vim.api.nvim_command
       local searched, refreshed = nil, false
       local commands = {}
-      nm.search_terms = function(query) searched = query end
-      refresh.refresh_search_buffer = function() refreshed = true end
+      nm.search_terms = function(query)
+        searched = query
+      end
+      refresh.refresh_search_buffer = function()
+        refreshed = true
+      end
       vim.api.nvim_call_function = function(name, args)
         H.eq("confirm", name)
         H.contains(args[1], "Purge deleted emails?")
         return 2
       end
-      vim.api.nvim_command = function(cmd) commands[#commands + 1] = cmd end
+      vim.api.nvim_command = function(cmd)
+        commands[#commands + 1] = cmd
+      end
 
       local buf = vim.api.nvim_create_buf(true, true)
       vim.api.nvim_win_set_buf(0, buf)
@@ -180,10 +196,18 @@ return {
       local old_command = vim.api.nvim_command
       local searches, refreshed = {}, false
       local commands = {}
-      nm.search_terms = function(query) searches[#searches + 1] = query end
-      refresh.refresh_search_buffer = function() refreshed = true end
-      vim.api.nvim_call_function = function() return 1 end
-      vim.api.nvim_command = function(cmd) commands[#commands + 1] = cmd end
+      nm.search_terms = function(query)
+        searches[#searches + 1] = query
+      end
+      refresh.refresh_search_buffer = function()
+        refreshed = true
+      end
+      vim.api.nvim_call_function = function()
+        return 1
+      end
+      vim.api.nvim_command = function(cmd)
+        commands[#commands + 1] = cmd
+      end
 
       local buf = vim.api.nvim_create_buf(true, true)
       vim.api.nvim_win_set_buf(0, buf)

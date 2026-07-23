@@ -96,7 +96,9 @@ return {
       vim.api.nvim_buf_set_var(buf, "notmuch_attachments", {})
       local old_notify = vim.notify
       local notes = {}
-      vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+      vim.notify = function(msg, level)
+        table.insert(notes, { msg = msg, level = level })
+      end
 
       commands.attach_handler(buf)({ args = dir })
       commands.remove_handler(buf)({ args = dir .. "/missing.txt" })
@@ -121,7 +123,9 @@ return {
       vim.api.nvim_buf_set_var(buf, "notmuch_attachments", {})
       local old_print = print
       local printed = {}
-      print = function(msg) table.insert(printed, tostring(msg)) end
+      print = function(msg)
+        table.insert(printed, tostring(msg))
+      end
 
       commands.list_handler(buf)()
       H.contains(printed, "No attachments")

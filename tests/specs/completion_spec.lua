@@ -50,7 +50,11 @@ return {
 
       vim.system = function(cmd)
         H.same({ "notmuch", "config", "get", "database.mail_root" }, cmd)
-        return { wait = function() return { code = 0, stdout = mailroot .. "\n" } end }
+        return {
+          wait = function()
+            return { code = 0, stdout = mailroot .. "\n" }
+          end,
+        }
       end
 
       vim.fn.systemlist = function(cmd)
@@ -73,9 +77,15 @@ return {
       end
 
       local completion = fresh_completion()
-      H.same({ 'folder:"List[dev]"' }, completion.comp_search_terms("folder:\"List", "", 0))
-      H.same({ 'folder:"Projects/With Space"' }, completion.comp_search_terms("folder:\"Projects", "", 0))
-      H.same({ 'path:"Projects/With Space"' }, completion.comp_search_terms("path:\"Projects", "", 0))
+      H.same({ 'folder:"List[dev]"' }, completion.comp_search_terms('folder:"List', "", 0))
+      H.same(
+        { 'folder:"Projects/With Space"' },
+        completion.comp_search_terms('folder:"Projects', "", 0)
+      )
+      H.same(
+        { 'path:"Projects/With Space"' },
+        completion.comp_search_terms('path:"Projects', "", 0)
+      )
 
       vim.system = old_system
       vim.fn.systemlist = old_systemlist
@@ -97,7 +107,11 @@ return {
       local notified = false
 
       vim.system = function()
-        return { wait = function() return { code = 1, stdout = "" } end }
+        return {
+          wait = function()
+            return { code = 1, stdout = "" }
+          end,
+        }
       end
       vim.notify = function(msg, level)
         notified = msg:find("database.mail_root", 1, true) and level == vim.log.levels.ERROR

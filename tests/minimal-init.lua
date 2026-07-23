@@ -7,12 +7,12 @@ vim.pack.add({
   },
 })
 
-require('catppuccin').setup({
-  flavour = 'mocha',
+require("catppuccin").setup({
+  flavour = "mocha",
 })
-vim.cmd.colorscheme('catppuccin')
+vim.cmd.colorscheme("catppuccin")
 
-require('notmuch').setup({
+require("notmuch").setup({
   notmuch_db_path = vim.fn.getcwd() .. "/tests/tmp/mail",
   maildir_sync_cmd = "true",
   render_html_body = false,

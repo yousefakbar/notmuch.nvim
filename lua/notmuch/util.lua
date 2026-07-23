@@ -8,7 +8,7 @@ local v = vim.api
 ---
 ---@param buf_attach integer Buffer id of the attachment scratch buffer.
 ---@return boolean empty True when no non-whitespace attachment path is present.
-u.empty_attachment_window = function (buf_attach)
+u.empty_attachment_window = function(buf_attach)
   for _, line in ipairs(v.nvim_buf_get_lines(buf_attach, 0, -1, false)) do
     if line:find("%S") then
       return false
@@ -21,7 +21,7 @@ end
 ---
 ---@param bytes integer|nil Size in bytes.
 ---@return string formatted Human-readable size, or `—` when size is nil/zero.
-u.format_size = function (bytes)
+u.format_size = function(bytes)
   if bytes == 0 or bytes == nil then
     return "—"
   elseif bytes < 1024 then
@@ -40,7 +40,7 @@ end
 ---@param path string File path to test.
 ---@return boolean exists True when the path can be opened in read mode.
 u.file_exists = function(path)
-  local file = io.open(path, 'r')
+  local file = io.open(path, "r")
   if file then
     file:close()
     return true
@@ -59,7 +59,7 @@ end
 ---@return string|nil err Error message when validation fails.
 u.validate_attachment_file = function(path)
   -- Attempt to open file for reading
-  local file, err = io.open(path, 'r')
+  local file, err = io.open(path, "r")
 
   if not file then
     return false, err
@@ -73,7 +73,7 @@ u.validate_attachment_file = function(path)
     return false, "Unable to read file metadata"
   end
 
-  if stat.type ~= 'file' then
+  if stat.type ~= "file" then
     return false, string.format("Path is a %s, not a regular file", stat.type)
   end
 
@@ -107,8 +107,8 @@ end
 u.split_length = function(s, length)
   local out = {}
 
-  for i=1, #s, length do
-    out[#out+1] = s:sub(i, i + length - 1)
+  for i = 1, #s, length do
+    out[#out + 1] = s:sub(i, i + length - 1)
   end
 
   return out
@@ -125,9 +125,11 @@ end
 -- indent_depth(buf, lineno, msg.depth)
 local indent_depth = function(buf, lineno, depth)
   local line = vim.fn.getline(lineno)
-  local s = ''
-  for _=0,depth-1 do s = '────' .. s end
-  v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { s .. line })
+  local s = ""
+  for _ = 0, depth - 1 do
+    s = "────" .. s
+  end
+  v.nvim_buf_set_lines(buf, lineno - 1, lineno, true, { s .. line })
 end
 
 -- Reformat legacy `notmuch show` text output in-place for the mail buffer.
@@ -147,7 +149,7 @@ u.process_msgs_in_thread = function(buf)
   -- Loop over each line in the buffer and clean up the message output format
   local msg = {} -- Table which stores id, depth, file of a message
   local lineno = 1 -- Start from the top of the buffer
-  local last = vim.fn.line('$') -- End at the bottom of the buffer
+  local last = vim.fn.line("$") -- End at the bottom of the buffer
 
   while lineno <= last do
     -- Store line contents
@@ -155,38 +157,38 @@ u.process_msgs_in_thread = function(buf)
 
     -- Message start : Store message details in `msg` and remove the line
     if string.match(line, "^message{") ~= nil then
-      msg.id = string.match(line, 'id:%S+')
-      msg.depth = tonumber(string.match(string.match(line, 'depth:%d+'), '%d+'))
-      msg.filename = string.match(line, 'filename:%C+')
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, {})
+      msg.id = string.match(line, "id:%S+")
+      msg.depth = tonumber(string.match(string.match(line, "depth:%d+"), "%d+"))
+      msg.filename = string.match(line, "filename:%C+")
+      v.nvim_buf_set_lines(buf, lineno - 1, lineno, true, {})
       lineno = lineno - 1
       last = last - 1 -- Because we removed a line so buffer is shorter
 
     -- Header fields : Subject, From, To, etc. Indent based on `msg.depth`
-    elseif string.match(line, '^header{') ~= nil then
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, {}) -- Remove "header("
+    elseif string.match(line, "^header{") ~= nil then
+      v.nvim_buf_set_lines(buf, lineno - 1, lineno, true, {}) -- Remove "header("
       indent_depth(buf, lineno, msg.depth)
       line = vim.fn.getline(lineno) -- Add fold start identifier '{{{'
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { line, msg.id .. ' {{{' })
+      v.nvim_buf_set_lines(buf, lineno - 1, lineno, true, { line, msg.id .. " {{{" })
 
     -- Pass over "Subject" field and next header fields
-    elseif string.match(line, '^Subject:') ~= nil then
+    elseif string.match(line, "^Subject:") ~= nil then
       lineno = lineno + 2
       last = last + 1
 
     -- Closing header field : Delete
-    elseif string.match(line, '^header}') ~= nil then
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { '' })
+    elseif string.match(line, "^header}") ~= nil then
+      v.nvim_buf_set_lines(buf, lineno - 1, lineno, true, { "" })
 
     -- Closing message field : Replace with folding closing "}}}"
-    elseif string.match(line, '^message}') ~= nil then
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, { '}}}', '' })
+    elseif string.match(line, "^message}") ~= nil then
+      v.nvim_buf_set_lines(buf, lineno - 1, lineno, true, { "}}}", "" })
       lineno = lineno + 1
       last = last + 1
 
     -- Removes extra cruft like "parts", etc.
-    elseif string.match(line, '^%a+[{}]') ~= nil then
-      v.nvim_buf_set_lines(buf, lineno-1, lineno, true, {})
+    elseif string.match(line, "^%a+[{}]") ~= nil then
+      v.nvim_buf_set_lines(buf, lineno - 1, lineno, true, {})
       lineno = lineno - 1
       last = last - 1
     end
@@ -213,15 +215,15 @@ u.find_cursor_msg_id = function()
   local id = nil
   while n ~= 1 do
     line = vim.fn.getline(n)
-    if string.match(line, '^id:%S+ {{{$') ~= nil then
-      id = string.match(line, '%S+', 4)
+    if string.match(line, "^id:%S+ {{{$") ~= nil then
+      id = string.match(line, "%S+", 4)
       return id
     end
     n = n - 1
   end
 
   -- id not found for the cursor location
-  print('No ID found. Make sure cursor is located in a message')
+  print("No ID found. Make sure cursor is located in a message")
   return nil
 end
 

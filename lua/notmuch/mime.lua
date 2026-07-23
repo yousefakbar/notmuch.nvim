@@ -1,7 +1,6 @@
 local m = {}
-local u = require('notmuch.util')
+local u = require("notmuch.util")
 local v = vim.api
-
 
 ---Build MIME part descriptors for outgoing attachments.
 ---
@@ -12,9 +11,9 @@ local v = vim.api
 ---@param paths string[] List of attachment file paths.
 ---@return table[] attachments MIME part descriptors for `make_mime_msg()`.
 ---Raises an error if one or more attachment paths are invalid.
-m.create_mime_attachments = function (paths)
+m.create_mime_attachments = function(paths)
   local mimes = {}
-  local invalid_files = {}  -- Collect all errors for better UX
+  local invalid_files = {} -- Collect all errors for better UX
 
   for _, path in ipairs(paths) do
     if path ~= "" then
@@ -25,7 +24,7 @@ m.create_mime_attachments = function (paths)
         -- Collect error for reporting
         table.insert(invalid_files, {
           path = path,
-          reason = err or "Unknown error"
+          reason = err or "Unknown error",
         })
       else
         -- File is valid, add to attachments
@@ -44,8 +43,8 @@ m.create_mime_attachments = function (paths)
     local error_msg = "Failed to attach file(s):\n\n"
 
     for _, invalid in ipairs(invalid_files) do
-      error_msg = error_msg .. string.format("  • %s\n    Reason: %s\n\n",
-                                              invalid.path, invalid.reason)
+      error_msg = error_msg
+        .. string.format("  • %s\n    Reason: %s\n\n", invalid.path, invalid.reason)
     end
 
     error_msg = error_msg .. "Cannot send email with invalid attachments.\n"
@@ -56,8 +55,6 @@ m.create_mime_attachments = function (paths)
 
   return mimes
 end
-
-
 
 -- Extract RFC 5322-style headers and body lines from a message.
 --
@@ -108,8 +105,6 @@ m.get_msg_attributes = function(lines)
   return attributes, msg
 end
 
-
-
 m.example_mime = {
   version = "Mime-Version: 1.0",
   type = "multipart/mixed",
@@ -119,26 +114,27 @@ m.example_mime = {
     to = "example@example.com",
     subject = "This is an example",
   },
-  mime = {{
-    type = "multipart/alternative",
-    attachment = false,
-    mime = {
-      {
-        file = "/path/to/example.txt",
-        type = "text/plain; charset=utf-8",
+  mime = {
+    {
+      type = "multipart/alternative",
+      attachment = false,
+      mime = {
+        {
+          file = "/path/to/example.txt",
+          type = "text/plain; charset=utf-8",
+        },
+        {
+          file = "/path/to/example.html",
+          type = "text/html; charset=utf-8",
+        },
       },
-      {
-        file = "/path/to/example.html",
-        type = "text/html; charset=utf-8",
-      },
-    }
-  },
+    },
     {
       file = "/path/to/example.pdf",
       encoding = "base64",
       attachment = true, -- if not true, then create an inline mime
     },
-  }
+  },
 }
 
 -- Returns the MIME type reported by the `file` command for a path.
@@ -146,7 +142,7 @@ m.example_mime = {
 ---@param path string File path to inspect.
 ---@return string mime_type Trimmed MIME type, for example `text/plain`.
 m.get_mime_type = function(path)
-  local output = vim.fn.system({'file', '--brief', '--mime-type', path})
+  local output = vim.fn.system({ "file", "--brief", "--mime-type", path })
   return vim.fn.trim(output)
 end
 
@@ -161,7 +157,6 @@ m.get_boundary = function(length)
     return ""
   end
 end
-
 
 -- Build a MIME message or MIME part as lines.
 --
@@ -190,9 +185,9 @@ m.make_mime_msg = function(mime_table)
 
     table.insert(mime, "")
 
-    for _,value in ipairs(mime_table.mime) do
+    for _, value in ipairs(mime_table.mime) do
       table.insert(mime, "--" .. boundary)
-      for _,value2 in ipairs(m.make_mime_msg(value) or {}) do
+      for _, value2 in ipairs(m.make_mime_msg(value) or {}) do
         table.insert(mime, value2)
       end
     end
@@ -229,11 +224,14 @@ m.make_mime_msg = function(mime_table)
 
     -- Defensive check: this should never happen if validation worked correctly
     if not file then
-      error(string.format(
-        "INTERNAL ERROR: Failed to open validated attachment file: %s\nReason: %s\n" ..
-        "This should not happen - please report this bug.",
-        mime_table.file, err or "Unknown error"
-      ))
+      error(
+        string.format(
+          "INTERNAL ERROR: Failed to open validated attachment file: %s\nReason: %s\n"
+            .. "This should not happen - please report this bug.",
+          mime_table.file,
+          err or "Unknown error"
+        )
+      )
     end
 
     table.insert(mime, "")
@@ -245,7 +243,7 @@ m.make_mime_msg = function(mime_table)
 
       -- RFC 2045 defines that the maximum line length for encoded base64 is 76 chars
       local split = u.split_length(content, 76)
-      for _,value in ipairs(split) do
+      for _, value in ipairs(split) do
         table.insert(mime, value)
       end
     else
@@ -254,9 +252,8 @@ m.make_mime_msg = function(mime_table)
       end
     end
 
-    file:close()  -- Close file handle
+    file:close() -- Close file handle
     table.insert(mime, "")
-
   end
   return mime
 end

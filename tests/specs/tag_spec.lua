@@ -32,9 +32,13 @@ local function with_mock_cnotmuch(state, fn)
     return db
   end
 
-  local ok, err = pcall(function() fn(dbs) end)
+  local ok, err = pcall(function()
+    fn(dbs)
+  end)
   package.loaded["notmuch.cnotmuch"] = old_loaded
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 local function message(initial_tags)
@@ -60,10 +64,14 @@ end
 local function with_current_message_id(id, fn)
   local thread_mod = require("notmuch.thread")
   local old = thread_mod.get_current_message_id
-  thread_mod.get_current_message_id = function() return id end
+  thread_mod.get_current_message_id = function()
+    return id
+  end
   local ok, err = pcall(fn)
   thread_mod.get_current_message_id = old
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 local function silence_print(fn)
@@ -71,7 +79,9 @@ local function silence_print(fn)
   print = function() end
   local ok, err = pcall(fn)
   print = old_print
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 return {
@@ -80,7 +90,8 @@ return {
     run = function()
       local tag = require("notmuch.tag")
       local msg = message({ existing = true })
-      local state = { messages = { msg1 = msg }, message_ids = {}, threads = {}, queries = {}, closed = 0 }
+      local state =
+        { messages = { msg1 = msg }, message_ids = {}, threads = {}, queries = {}, closed = 0 }
 
       with_mock_cnotmuch(state, function(dbs)
         with_current_message_id("msg1", function()
@@ -153,7 +164,10 @@ return {
         end)
       end)
 
-      H.same({ "thread:abc", "thread:def", "thread:abc", "thread:def", "thread:abc", "thread:def" }, state.queries)
+      H.same(
+        { "thread:abc", "thread:def", "thread:abc", "thread:def", "thread:abc", "thread:def" },
+        state.queries
+      )
       H.same({ "one", "two", "flagged" }, t1.added)
       H.same({ "old", "gone", "inbox" }, t1.removed)
       H.same({ "one", "two", "inbox", "flagged" }, t2.added)
@@ -168,7 +182,8 @@ return {
     run = function()
       local tag = require("notmuch.tag")
       local t1 = thread({})
-      local state = { messages = {}, message_ids = {}, queries = {}, closed = 0, threads = { abc = t1 } }
+      local state =
+        { messages = {}, message_ids = {}, queries = {}, closed = 0, threads = { abc = t1 } }
       local buf = vim.api.nvim_create_buf(false, true)
       vim.api.nvim_win_set_buf(0, buf)
       vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "thread:abc  subject" })

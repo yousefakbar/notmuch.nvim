@@ -1,9 +1,25 @@
 local C = {}
 
 local search_terms_list = {
-  "attachment:", "folder:", "id:", "mimetype:",
-  "property:", "subject:", "thread:", "date:", "from:", "lastmod:",
-  "path:", "query:", "tag:", "is:", "to:", "body:", "and ", "or ", "not ",
+  "attachment:",
+  "folder:",
+  "id:",
+  "mimetype:",
+  "property:",
+  "subject:",
+  "thread:",
+  "date:",
+  "from:",
+  "lastmod:",
+  "path:",
+  "query:",
+  "tag:",
+  "is:",
+  "to:",
+  "body:",
+  "and ",
+  "or ",
+  "not ",
 }
 
 local function quote_if_needed(s)
@@ -67,8 +83,17 @@ function C.comp_search_terms(arglead, _, _)
       end, tags)
     elseif vim.startswith(arglead, "mimetype:") then
       local mimetypes = {
-        "application/", "audio/", "chemical/", "font/", "image/",
-        "inode/", "message/", "model/", "multipart/", "text/", "video/",
+        "application/",
+        "audio/",
+        "chemical/",
+        "font/",
+        "image/",
+        "inode/",
+        "message/",
+        "model/",
+        "multipart/",
+        "text/",
+        "video/",
       }
       return vim.tbl_map(function(m)
         return "mimetype:" .. m
@@ -85,10 +110,17 @@ function C.comp_search_terms(arglead, _, _)
       end, addrs)
     elseif vim.startswith(arglead, "folder:") then
       local mailroot = get_mailroot()
-      if not mailroot then return {} end
+      if not mailroot then
+        return {}
+      end
 
       local dirs = vim.fn.systemlist({
-        "find", mailroot, "-type", "d", "-name", "cur",
+        "find",
+        mailroot,
+        "-type",
+        "d",
+        "-name",
+        "cur",
       })
 
       local folders = {}
@@ -105,7 +137,9 @@ function C.comp_search_terms(arglead, _, _)
       return uniq_sorted(folders)
     elseif vim.startswith(arglead, "path:") then
       local mailroot = get_mailroot()
-      if not mailroot then return {} end
+      if not mailroot then
+        return {}
+      end
 
       local dirs = vim.fn.systemlist({ "find", mailroot, "-type", "d" })
 

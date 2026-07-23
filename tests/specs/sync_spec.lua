@@ -2,7 +2,9 @@ local H = dofile("tests/helpers.lua")
 
 local function map_callback(mode, lhs, buf)
   for _, m in ipairs(vim.api.nvim_buf_get_keymap(buf, mode)) do
-    if m.lhs == lhs then return m.callback end
+    if m.lhs == lhs then
+      return m.callback
+    end
   end
 end
 
@@ -17,7 +19,9 @@ return {
         started = { cmd = cmd, opts = opts }
         return 42
       end
-      vim.fn.jobstop = function(job_id) stopped = job_id end
+      vim.fn.jobstop = function(job_id)
+        stopped = job_id
+      end
       vim.fn.jobwait = function(jobs, timeout)
         H.same({ 42 }, jobs)
         H.eq(0, timeout)
@@ -54,7 +58,9 @@ return {
       local old_create_job = sync.create_job
       local old_notify = vim.notify
       local notes = {}
-      vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+      vim.notify = function(msg, level)
+        table.insert(notes, { msg = msg, level = level })
+      end
       sync.create_job = function(cmd, opts)
         H.eq("printf sync ; notmuch new", cmd)
         opts.on_stdout(1, { "line one", "" })
@@ -95,9 +101,14 @@ return {
       local old_create_job = sync.create_job
       local old_notify = vim.notify
       local notes = {}
-      vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+      vim.notify = function(msg, level)
+        table.insert(notes, { msg = msg, level = level })
+      end
       local exit_cb
-      sync.create_job = function(_, opts) exit_cb = opts.on_exit; return 321 end
+      sync.create_job = function(_, opts)
+        exit_cb = opts.on_exit
+        return 321
+      end
 
       sync.sync_maildir()
       H.eq(before, vim.api.nvim_get_current_buf())
@@ -122,7 +133,9 @@ return {
       local old_create_job = sync.create_job
       local old_notify = vim.notify
       local notes = {}
-      vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+      vim.notify = function(msg, level)
+        table.insert(notes, { msg = msg, level = level })
+      end
       sync.create_job = function(_, opts)
         opts.on_stderr(1, { "boom" })
         opts.on_exit(1, 2)
@@ -157,10 +170,20 @@ return {
       local stopped
       local running = true
       local note
-      sync.create_job = function() return 333 end
-      sync.stop_job = function(job_id) stopped = job_id; running = false; return true end
-      sync.is_job_running = function(job_id) return job_id == 333 and running end
-      vim.notify = function(msg, level) note = { msg = msg, level = level } end
+      sync.create_job = function()
+        return 333
+      end
+      sync.stop_job = function(job_id)
+        stopped = job_id
+        running = false
+        return true
+      end
+      sync.is_job_running = function(job_id)
+        return job_id == 333 and running
+      end
+      vim.notify = function(msg, level)
+        note = { msg = msg, level = level }
+      end
 
       sync.sync_maildir()
       local buf = vim.api.nvim_get_current_buf()
@@ -195,8 +218,13 @@ return {
       local old_notify = vim.notify
       local notes = {}
       local exit_cb
-      sync.create_job = function(_, opts) exit_cb = opts.on_exit; return 444 end
-      vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+      sync.create_job = function(_, opts)
+        exit_cb = opts.on_exit
+        return 444
+      end
+      vim.notify = function(msg, level)
+        table.insert(notes, { msg = msg, level = level })
+      end
 
       sync.sync_maildir()
       H.eq(444, sync.get_current_sync_job())
@@ -228,7 +256,9 @@ return {
         table.insert(cmds, cmd)
         return old_cmd(cmd)
       end
-      vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+      vim.notify = function(msg, level)
+        table.insert(notes, { msg = msg, level = level })
+      end
       vim.fn.chansend = function(job, data)
         term_job = job
         sent_cmd = data
@@ -242,7 +272,9 @@ return {
         H.eq("printf sync ; notmuch new ; exit\n", sent_cmd)
         H.list_contains(cmds, "botright 15split | terminal")
         H.list_contains(cmds, "startinsert")
-        H.wait_until(function() return sync.get_current_sync_job() == nil end, 1500)
+        H.wait_until(function()
+          return sync.get_current_sync_job() == nil
+        end, 1500)
         H.wait_until(function()
           return notes[#notes] and notes[#notes].msg:find("finished successfully", 1, true)
         end, 2000)
@@ -253,7 +285,9 @@ return {
       vim.cmd = old_cmd
       vim.notify = old_notify
       sync.set_current_sync_job(nil)
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {
@@ -269,7 +303,9 @@ return {
       local old_notify = vim.notify
       local sent_cmd
       local notes = {}
-      vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+      vim.notify = function(msg, level)
+        table.insert(notes, { msg = msg, level = level })
+      end
       vim.fn.chansend = function(job, data)
         sent_cmd = data
         return old_chansend(job, "exit 7\n")
@@ -278,7 +314,9 @@ return {
       local ok, err = pcall(function()
         sync.sync_maildir()
         H.eq("false ; notmuch new ; exit\n", sent_cmd)
-        H.wait_until(function() return sync.get_current_sync_job() == nil end, 1500)
+        H.wait_until(function()
+          return sync.get_current_sync_job() == nil
+        end, 1500)
         H.wait_until(function()
           return notes[#notes] and notes[#notes].msg:find("exit code: 7", 1, true)
         end, 1500)
@@ -288,7 +326,9 @@ return {
       vim.fn.chansend = old_chansend
       vim.notify = old_notify
       sync.set_current_sync_job(nil)
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {
@@ -299,13 +339,21 @@ return {
       local old_create_job = sync.create_job
       local old_notify = vim.notify
       sync.set_current_sync_job(999)
-      sync.is_job_running = function() return true end
-      sync.create_job = function() error("should not create job") end
+      sync.is_job_running = function()
+        return true
+      end
+      sync.create_job = function()
+        error("should not create job")
+      end
       local note
-      vim.notify = function(msg, level) note = { msg = msg, level = level } end
+      vim.notify = function(msg, level)
+        note = { msg = msg, level = level }
+      end
 
       local existing = vim.fn.bufnr("notmuch-sync")
-      if existing ~= -1 then vim.api.nvim_buf_delete(existing, { force = true }) end
+      if existing ~= -1 then
+        vim.api.nvim_buf_delete(existing, { force = true })
+      end
       local buf = vim.api.nvim_create_buf(true, true)
       vim.api.nvim_win_set_buf(0, buf)
       vim.api.nvim_buf_set_name(buf, "notmuch-sync")
@@ -332,9 +380,15 @@ return {
       local old_notify = vim.notify
       local created = false
       local note
-      sync.is_job_running = function() return true end
-      sync.create_job = function() created = true end
-      vim.notify = function(msg, level) note = { msg = msg, level = level } end
+      sync.is_job_running = function()
+        return true
+      end
+      sync.create_job = function()
+        created = true
+      end
+      vim.notify = function(msg, level)
+        note = { msg = msg, level = level }
+      end
 
       sync.sync_maildir()
       H.eq(false, created)

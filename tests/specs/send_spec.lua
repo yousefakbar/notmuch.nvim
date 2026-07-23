@@ -3,7 +3,9 @@ local H = dofile("tests/helpers.lua")
 local function map_callback(mode, lhs, buf)
   local target = lhs:lower()
   for _, m in ipairs(vim.api.nvim_buf_get_keymap(buf, mode)) do
-    if m.lhs:lower() == target then return m.callback end
+    if m.lhs:lower() == target then
+      return m.callback
+    end
   end
 end
 
@@ -35,7 +37,9 @@ local function with_send_env(fn)
     show_sent_drafts = false,
     auto_open_attachment_window = false,
   }
-  vim.ui.select = function(_, _, on_choice) on_choice(nil) end
+  vim.ui.select = function(_, _, on_choice)
+    on_choice(nil)
+  end
 
   local ok, err = pcall(fn, state, send, config, thread)
 
@@ -51,7 +55,9 @@ local function with_send_env(fn)
   vim.system = old_system
   pcall(vim.cmd, "silent! %bwipeout!")
 
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 return {
@@ -61,17 +67,26 @@ return {
       with_send_env(function(_, send, config)
         send.compose("to+tag@example.com")
         local main_buf = vim.api.nvim_get_current_buf()
-        H.matches(vim.api.nvim_buf_get_name(main_buf), "/drafts/compose/compose%-%d%d%d%d%d%d%d%dT%d%d%d%d%d%dZ%-%x%x%x%x%x%x%x%x%.eml$", "expected persistent compose draft filename")
+        H.matches(
+          vim.api.nvim_buf_get_name(main_buf),
+          "/drafts/compose/compose%-%d%d%d%d%d%d%d%dT%d%d%d%d%d%dZ%-%x%x%x%x%x%x%x%x%.eml$",
+          "expected persistent compose draft filename"
+        )
         H.same({
           "From: Sender Name <sender@example.com>",
           "To: to+tag@example.com",
           "Cc: ",
           "Subject: ",
           "",
-          'Message body goes here. Add attachments with "' .. config.options.keymaps.attachment_window .. '" or `:AttachOpen`. Send with "' .. config.options.keymaps.sendmail .. '".',
+          'Message body goes here. Add attachments with "'
+            .. config.options.keymaps.attachment_window
+            .. '" or `:AttachOpen`. Send with "'
+            .. config.options.keymaps.sendmail
+            .. '".',
         }, vim.api.nvim_buf_get_lines(main_buf, 0, -1, false))
 
-        local ok_scratch = pcall(vim.api.nvim_buf_get_var, main_buf, "notmuch_attachment_scratch_buf")
+        local ok_scratch =
+          pcall(vim.api.nvim_buf_get_var, main_buf, "notmuch_attachment_scratch_buf")
         H.eq(false, ok_scratch, "scratch buffer should not auto-open by default")
         local commands = vim.api.nvim_buf_get_commands(main_buf, {})
         H.ok(commands.Attach, "missing Attach command")
@@ -84,7 +99,10 @@ return {
         H.ok(attach_cb, "missing compose attachment-window keymap")
         attach_cb()
         H.ok(#vim.api.nvim_list_wins() > before_wins, "expected attachment split to open")
-        H.ok(vim.api.nvim_get_current_buf() ~= main_buf, "expected attachment buffer to become current")
+        H.ok(
+          vim.api.nvim_get_current_buf() ~= main_buf,
+          "expected attachment buffer to become current"
+        )
         vim.cmd("close")
       end)
     end,
@@ -102,7 +120,11 @@ return {
         H.ok(vim.api.nvim_buf_is_valid(scratch_buf), "expected linked scratch buffer")
         H.eq(main_buf, vim.api.nvim_buf_get_var(scratch_buf, "notmuch_parent_draft_buf"))
         H.eq("notmuch-attach-draft", vim.bo[scratch_buf].filetype)
-        H.eq(main_buf, vim.api.nvim_get_current_buf(), "draft buffer should keep focus after auto-opening scratch")
+        H.eq(
+          main_buf,
+          vim.api.nvim_get_current_buf(),
+          "draft buffer should keep focus after auto-opening scratch"
+        )
       end)
     end,
   },
@@ -142,7 +164,9 @@ return {
           table.insert(state.sent, path)
           return true
         end
-        vim.api.nvim_call_function = function() return 1 end
+        vim.api.nvim_call_function = function()
+          return 1
+        end
 
         send.compose("plain@example.com")
         local main_buf = vim.api.nvim_get_current_buf()
@@ -158,9 +182,15 @@ return {
         H.contains(sent_lines, "Content-Type: text/plain; charset=utf-8")
         H.contains(sent_lines, "Content-Transfer-Encoding: 8bit")
         H.contains(sent_lines, "Hello plain body")
-        H.ok(not table.concat(sent_lines, "\n"):find("multipart/mixed", 1, true), "plain message should not be multipart")
+        H.ok(
+          not table.concat(sent_lines, "\n"):find("multipart/mixed", 1, true),
+          "plain message should not be multipart"
+        )
         local draft_lines = vim.api.nvim_buf_get_lines(main_buf, 0, -1, false)
-        H.ok(not table.concat(draft_lines, "\n"):find("MIME-Version", 1, true), "persistent draft should not be mutated into send artifact")
+        H.ok(
+          not table.concat(draft_lines, "\n"):find("MIME-Version", 1, true),
+          "persistent draft should not be mutated into send artifact"
+        )
       end)
     end,
   },
@@ -173,7 +203,9 @@ return {
           table.insert(state.sent, path)
           return true
         end
-        vim.api.nvim_call_function = function() return 1 end
+        vim.api.nvim_call_function = function()
+          return 1
+        end
 
         send.compose("mime@example.com")
         local main_buf = vim.api.nvim_get_current_buf()
@@ -192,9 +224,10 @@ return {
         H.contains(text, "From: Sender Name <sender@example.com>")
         H.contains(text, "To: mime@example.com")
         H.contains(text, "Content-Type: multipart/mixed")
-        H.contains(text, "Content-Disposition: attachment; filename=\"attachment.txt\"")
+        H.contains(text, 'Content-Disposition: attachment; filename="attachment.txt"')
         H.contains(text, "Hello MIME body")
-        local metadata = require("notmuch.draft").read_metadata(vim.b[main_buf].notmuch_draft_json_path)
+        local metadata =
+          require("notmuch.draft").read_metadata(vim.b[main_buf].notmuch_draft_json_path)
         H.same({ attachment }, metadata.attachments)
       end)
     end,
@@ -231,7 +264,12 @@ return {
         send.reply()
         local buf = vim.api.nvim_get_current_buf()
         H.eq("msg/with/slash", requested_id)
-        H.matches(vim.api.nvim_buf_get_name(buf), "/drafts/replies/" .. vim.fn.sha256("msg/with/slash") .. "/reply%-%d%d%d%d%d%d%d%dT%d%d%d%d%d%dZ%-%x%x%x%x%x%x%x%x%.eml$")
+        H.matches(
+          vim.api.nvim_buf_get_name(buf),
+          "/drafts/replies/"
+            .. vim.fn.sha256("msg/with/slash")
+            .. "/reply%-%d%d%d%d%d%d%d%dT%d%d%d%d%d%dZ%-%x%x%x%x%x%x%x%x%.eml$"
+        )
         H.same({}, vim.b[buf].notmuch_attachments)
         H.ok(vim.b[buf].notmuch_draft_json_path, "missing draft sidecar buffer variable")
         H.contains(vim.api.nvim_buf_get_lines(buf, 0, -1, false), "quoted reply body")
@@ -247,8 +285,11 @@ return {
           error("notmuch reply should not be called when an existing reply draft is selected")
         end
 
-        local draft = require("notmuch.draft").create_reply_draft("existing/id", { "Existing draft" })
-        thread.get_current_message_id = function() return "existing/id" end
+        local draft =
+          require("notmuch.draft").create_reply_draft("existing/id", { "Existing draft" })
+        thread.get_current_message_id = function()
+          return "existing/id"
+        end
         vim.ui.select = function(items, opts, on_choice)
           H.eq("Select reply draft:", opts.prompt)
           H.eq("new_reply", items[1].action)
@@ -271,7 +312,9 @@ return {
           table.insert(state.sent, path)
           return true
         end
-        vim.api.nvim_call_function = function() return 1 end
+        vim.api.nvim_call_function = function()
+          return 1
+        end
 
         vim.system = function(args)
           local id = args[3]:sub(4)
@@ -279,14 +322,18 @@ return {
             wait = function()
               return {
                 code = 0,
-                stdout = "From: Sender Name <sender@example.com>\nTo: Recipient <recipient@example.com>\nSubject: Re: " .. id .. "\n\nBody",
+                stdout = "From: Sender Name <sender@example.com>\nTo: Recipient <recipient@example.com>\nSubject: Re: "
+                  .. id
+                  .. "\n\nBody",
                 stderr = "",
               }
             end,
           }
         end
 
-        thread.get_current_message_id = function() return "plain-reply" end
+        thread.get_current_message_id = function()
+          return "plain-reply"
+        end
         send.reply()
         local plain_buf = vim.api.nvim_get_current_buf()
         vim.api.nvim_buf_set_lines(plain_buf, 0, -1, false, {
@@ -300,7 +347,9 @@ return {
         H.matches(state.sent[#state.sent], "%-notmuch%-send%.eml$")
         H.contains(vim.fn.readfile(state.sent[#state.sent]), "MIME-Version: 1.0")
 
-        thread.get_current_message_id = function() return "mime-reply" end
+        thread.get_current_message_id = function()
+          return "mime-reply"
+        end
         send.reply()
         local mime_buf = vim.api.nvim_get_current_buf()
         local attachment = H.write_file(state.dir .. "/reply-attachment.txt", "reply attachment\n")
@@ -319,7 +368,7 @@ return {
         H.matches(state.sent[#state.sent], "%-notmuch%-send%.eml$")
         local text = table.concat(vim.fn.readfile(state.sent[#state.sent]), "\n")
         H.contains(text, "Content-Type: multipart/mixed")
-        H.contains(text, "Content-Disposition: attachment; filename=\"reply-attachment.txt\"")
+        H.contains(text, 'Content-Disposition: attachment; filename="reply-attachment.txt"')
       end)
     end,
   },
@@ -329,14 +378,18 @@ return {
       with_send_env(function(_, send)
         local old_notify = vim.notify
         local note
-        vim.notify = function(msg, level) note = { msg = msg, level = level } end
+        vim.notify = function(msg, level)
+          note = { msg = msg, level = level }
+        end
         local ok, err = pcall(function()
           H.eq(false, send.sendmail("/tmp/notmuch-nvim-missing-message.eml"))
           H.contains(note.msg, "Email file not found")
           H.eq(vim.log.levels.ERROR, note.level)
         end)
         vim.notify = old_notify
-        if not ok then error(err, 0) end
+        if not ok then
+          error(err, 0)
+        end
       end)
     end,
   },
@@ -356,7 +409,9 @@ return {
           table.insert(cmds, cmd)
           return old_cmd(cmd)
         end
-        vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+        vim.notify = function(msg, level)
+          table.insert(notes, { msg = msg, level = level })
+        end
         vim.fn.chansend = function(job, data)
           term_job = job
           sent_cmd = data
@@ -380,7 +435,9 @@ return {
         vim.fn.chansend = old_chansend
         vim.cmd = old_cmd
         vim.notify = old_notify
-        if not ok then error(err, 0) end
+        if not ok then
+          error(err, 0)
+        end
       end)
     end,
   },
@@ -395,7 +452,9 @@ return {
         local old_notify = vim.notify
         local sent_cmd
         local notes = {}
-        vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+        vim.notify = function(msg, level)
+          table.insert(notes, { msg = msg, level = level })
+        end
         vim.fn.chansend = function(job, data)
           sent_cmd = data
           return old_chansend(job, "exit 7\n")
@@ -413,7 +472,9 @@ return {
 
         vim.fn.chansend = old_chansend
         vim.notify = old_notify
-        if not ok then error(err, 0) end
+        if not ok then
+          error(err, 0)
+        end
       end)
     end,
   },

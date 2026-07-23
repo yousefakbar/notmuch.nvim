@@ -19,7 +19,7 @@ local S = {}
 -- -----------------------------------------------------------------------------
 
 local v = vim.api
-local state = require('notmuch.attach.state')
+local state = require("notmuch.attach.state")
 
 -- -----------------------------------------------------------------------------
 -- PRIVATE HELPERS
@@ -33,7 +33,7 @@ local function normalize_buf(buf)
 
   -- Verify `buf` is a valid buffer
   if not v.nvim_buf_is_valid(buf) then
-    error('Invalid buffer: ' .. tostring(buf))
+    error("Invalid buffer: " .. tostring(buf))
   end
 
   return buf
@@ -41,8 +41,8 @@ end
 
 local function get_linked_scratch_buffer(draft_buf)
   -- Get linked scratch buffer from the buffer-local variable in the parent buf
-  local ok, scratch_buf = pcall(v.nvim_buf_get_var, draft_buf, 'notmuch_attachment_scratch_buf')
-  if not ok or type(scratch_buf) ~= 'number' then
+  local ok, scratch_buf = pcall(v.nvim_buf_get_var, draft_buf, "notmuch_attachment_scratch_buf")
+  if not ok or type(scratch_buf) ~= "number" then
     return nil
   end
 
@@ -55,8 +55,8 @@ local function get_linked_scratch_buffer(draft_buf)
 end
 
 local function get_parent_draft_buf(scratch_buf)
-  local ok, draft_buf = pcall(v.nvim_buf_get_var, scratch_buf, 'notmuch_parent_draft_buf')
-  if not ok or type(draft_buf) ~= 'number' then
+  local ok, draft_buf = pcall(v.nvim_buf_get_var, scratch_buf, "notmuch_parent_draft_buf")
+  if not ok or type(draft_buf) ~= "number" then
     return nil
   end
 
@@ -68,22 +68,22 @@ local function get_parent_draft_buf(scratch_buf)
 end
 
 local function set_syncing(scratch_buf, value)
-  v.nvim_buf_set_var(scratch_buf, 'notmuch_attachment_syncing', value)
+  v.nvim_buf_set_var(scratch_buf, "notmuch_attachment_syncing", value)
 end
 
 local function is_syncing(scratch_buf)
-  local ok, syncing = pcall(v.nvim_buf_get_var, scratch_buf, 'notmuch_attachment_syncing')
+  local ok, syncing = pcall(v.nvim_buf_get_var, scratch_buf, "notmuch_attachment_syncing")
   return ok and syncing == true
 end
 
 local function setup_autocmds(scratch_buf)
   -- Create augroup for the specific scratch buffer, and clear any existing
-  local group = v.nvim_create_augroup('notmuch_attach_scratch_' .. scratch_buf, {
+  local group = v.nvim_create_augroup("notmuch_attach_scratch_" .. scratch_buf, {
     clear = true,
   })
 
   -- Create syncing autocommands on TextChanged, [TextChangedI], BufLeave events
-  v.nvim_create_autocmd({ 'TextChanged', 'BufLeave' }, { -- 'TextChangedI' optional later
+  v.nvim_create_autocmd({ "TextChanged", "BufLeave" }, { -- 'TextChangedI' optional later
     group = group,
     buffer = scratch_buf,
     callback = function()
@@ -92,13 +92,13 @@ local function setup_autocmds(scratch_buf)
   })
 
   -- Create unlink parent draft_buf autocommand on scratch buffer closure
-  v.nvim_create_autocmd('BufWipeout', {
+  v.nvim_create_autocmd("BufWipeout", {
     group = group,
     buffer = scratch_buf,
     callback = function()
       local draft_buf = get_parent_draft_buf(scratch_buf)
       if draft_buf and v.nvim_buf_is_valid(draft_buf) then
-        pcall(v.nvim_buf_del_var, draft_buf, 'notmuch_attachment_scratch_buf')
+        pcall(v.nvim_buf_del_var, draft_buf, "notmuch_attachment_scratch_buf")
       end
     end,
   })
@@ -125,27 +125,27 @@ function S.open(draft_buf, opts)
   local existing = get_linked_scratch_buffer(draft_buf)
   if existing then
     -- Show existing buffer somehow
-    vim.cmd('belowright 8split')
+    vim.cmd("belowright 8split")
     v.nvim_win_set_buf(0, existing)
     S.refresh(draft_buf)
     return existing
   end
 
   -- Not existing, so create and initialize the linked buffer
-  vim.cmd('belowright 8new')
+  vim.cmd("belowright 8new")
   local scratch_buf = v.nvim_get_current_buf()
 
   -- Set scratch buffer options
-  v.nvim_buf_set_name(scratch_buf, 'notmuch-attachments:' .. draft_buf)
-  vim.bo[scratch_buf].buftype = 'nofile'
-  vim.bo[scratch_buf].bufhidden = 'hide'
+  v.nvim_buf_set_name(scratch_buf, "notmuch-attachments:" .. draft_buf)
+  vim.bo[scratch_buf].buftype = "nofile"
+  vim.bo[scratch_buf].bufhidden = "hide"
   vim.bo[scratch_buf].swapfile = false
-  vim.bo[scratch_buf].filetype = 'notmuch-attach-draft'
+  vim.bo[scratch_buf].filetype = "notmuch-attach-draft"
 
   -- Link scratch and draft buffer and initialize buffer-local variables
-  v.nvim_buf_set_var(draft_buf, 'notmuch_attachment_scratch_buf', scratch_buf)
-  v.nvim_buf_set_var(scratch_buf, 'notmuch_parent_draft_buf', draft_buf)
-  v.nvim_buf_set_var(scratch_buf, 'notmuch_attachment_syncing', false)
+  v.nvim_buf_set_var(draft_buf, "notmuch_attachment_scratch_buf", scratch_buf)
+  v.nvim_buf_set_var(scratch_buf, "notmuch_parent_draft_buf", draft_buf)
+  v.nvim_buf_set_var(scratch_buf, "notmuch_attachment_syncing", false)
 
   S.refresh(draft_buf)
   setup_autocmds(scratch_buf)
@@ -194,7 +194,7 @@ function S.sync_from_scratch(scratch_buf)
   -- Get linked parent draft buffer
   local draft_buf = get_parent_draft_buf(scratch_buf)
   if not draft_buf then
-    return false, 'No parent draft buffer'
+    return false, "No parent draft buffer"
   end
 
   -- Get list of attachments (table of lines from scratch_buf)

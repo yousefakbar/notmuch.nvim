@@ -3,7 +3,9 @@ local H = dofile("tests/helpers.lua")
 local function map_callback(mode, lhs, buf)
   local target = lhs:lower()
   for _, m in ipairs(vim.api.nvim_buf_get_keymap(buf, mode)) do
-    if m.lhs:lower() == target then return m.callback end
+    if m.lhs:lower() == target then
+      return m.callback
+    end
   end
 end
 
@@ -80,7 +82,9 @@ return {
       vim.cmd("Notmuch")
       local inbox_line
       for i, line in ipairs(H.current_lines()) do
-        if line == "inbox" then inbox_line = i end
+        if line == "inbox" then
+          inbox_line = i
+        end
       end
       H.ok(inbox_line, "expected inbox tag on hello page")
       vim.api.nvim_win_set_cursor(0, { inbox_line, 0 })
@@ -133,7 +137,10 @@ return {
       local thread_id = current_thread_id()
 
       vim.cmd("TagToggle " .. tag_name)
-      H.ok(notmuch_count("thread:" .. thread_id .. " and tag:" .. tag_name) > 0, "expected toggled thread tag")
+      H.ok(
+        notmuch_count("thread:" .. thread_id .. " and tag:" .. tag_name) > 0,
+        "expected toggled thread tag"
+      )
       vim.cmd("TagToggle " .. tag_name)
       H.eq(0, notmuch_count("thread:" .. thread_id .. " and tag:" .. tag_name))
 
@@ -162,7 +169,9 @@ return {
       local config = require("notmuch.config")
       local old_open, old_view = config.options.open_handler, config.options.view_handler
       local opened, viewed
-      config.options.open_handler = function(attachment) opened = attachment.path end
+      config.options.open_handler = function(attachment)
+        opened = attachment.path
+      end
       config.options.view_handler = function(attachment)
         viewed = attachment.path
         return "stub viewed attachment"
@@ -207,7 +216,9 @@ return {
       end)
 
       config.options.open_handler, config.options.view_handler = old_open, old_view
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {
@@ -222,15 +233,19 @@ return {
       local sent_cmd
       config.options.from = "E2E Sender <sender@example.com>"
       config.options.keymaps = { sendmail = "<C-g><C-g>", attachment_window = "<C-g><C-a>" }
-      config.options.drafts = { folder = H.tmpdir() .. "/drafts", delete_sent = false, show_sent_drafts = false }
-      vim.api.nvim_call_function = function() return 1 end
+      config.options.drafts =
+        { folder = H.tmpdir() .. "/drafts", delete_sent = false, show_sent_drafts = false }
+      vim.api.nvim_call_function = function()
+        return 1
+      end
       vim.fn.chansend = function(job, data)
         sent_cmd = data
         return old_chansend(job, "exit 0\n")
       end
 
       local ok, err = pcall(function()
-        local attachment = H.write_file(H.tmpdir() .. "/compose-attachment.txt", "compose attachment\n")
+        local attachment =
+          H.write_file(H.tmpdir() .. "/compose-attachment.txt", "compose attachment\n")
         send.compose("compose@example.com")
         local main_buf = vim.api.nvim_get_current_buf()
         H.matches(vim.api.nvim_buf_get_name(main_buf), "/drafts/compose/compose%-.*%.eml$")
@@ -246,14 +261,16 @@ return {
 
         vim.api.nvim_set_current_buf(main_buf)
         map_callback("n", config.options.keymaps.sendmail, main_buf)()
-        H.wait_until(function() return sent_cmd ~= nil end, 1500)
+        H.wait_until(function()
+          return sent_cmd ~= nil
+        end, 1500)
         H.contains(sent_cmd, "msmtp -t --read-envelope-from")
         H.contains(sent_cmd, " ; exit")
         local send_file = sent_cmd:match("<([^ ;]+)")
         send_file = send_file and (send_file:match("^'(.+)'$") or send_file)
         local text = table.concat(vim.fn.readfile(send_file), "\n")
         H.contains(text, "Content-Type: multipart/mixed")
-        H.contains(text, "Content-Disposition: attachment; filename=\"compose-attachment.txt\"")
+        H.contains(text, 'Content-Disposition: attachment; filename="compose-attachment.txt"')
         H.contains(text, "Compose E2E body")
       end)
 
@@ -261,7 +278,9 @@ return {
       vim.fn.chansend = old_chansend
       config.options.from, config.options.keymaps = old_from, old_keymaps
       config.options.drafts = old_drafts
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {
@@ -275,9 +294,12 @@ return {
       local old_drafts = vim.deepcopy(config.options.drafts)
       local old_keymaps = config.options.keymaps
       local sent_cmd
-      config.options.drafts = { folder = H.tmpdir() .. "/drafts", delete_sent = false, show_sent_drafts = false }
+      config.options.drafts =
+        { folder = H.tmpdir() .. "/drafts", delete_sent = false, show_sent_drafts = false }
       config.options.keymaps = { sendmail = "<C-g><C-g>", attachment_window = "<C-g><C-a>" }
-      vim.api.nvim_call_function = function() return 1 end
+      vim.api.nvim_call_function = function()
+        return 1
+      end
       vim.fn.chansend = function(job, data)
         sent_cmd = data
         return old_chansend(job, "exit 0\n")
@@ -299,20 +321,24 @@ return {
         vim.api.nvim_buf_set_lines(attach_buf, 0, -1, false, { attachment })
         vim.api.nvim_set_current_buf(reply_buf)
         map_callback("n", config.options.keymaps.sendmail, reply_buf)()
-        H.wait_until(function() return sent_cmd ~= nil end, 1500)
+        H.wait_until(function()
+          return sent_cmd ~= nil
+        end, 1500)
         H.contains(sent_cmd, "msmtp -t --read-envelope-from")
         local send_file = sent_cmd:match("<([^ ;]+)")
         send_file = send_file and (send_file:match("^'(.+)'$") or send_file)
         local text = table.concat(vim.fn.readfile(send_file), "\n")
         H.contains(text, "Content-Type: multipart/mixed")
-        H.contains(text, "Content-Disposition: attachment; filename=\"reply-attachment.txt\"")
+        H.contains(text, 'Content-Disposition: attachment; filename="reply-attachment.txt"')
       end)
 
       vim.api.nvim_call_function = old_confirm
       vim.fn.chansend = old_chansend
       config.options.drafts = old_drafts
       config.options.keymaps = old_keymaps
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {
@@ -324,7 +350,9 @@ return {
       local old_chansend = vim.fn.chansend
       local old_notify = vim.notify
       local notes, sent_cmd = {}, nil
-      vim.notify = function(msg, level) table.insert(notes, { msg = msg, level = level }) end
+      vim.notify = function(msg, level)
+        table.insert(notes, { msg = msg, level = level })
+      end
       vim.fn.chansend = function(job, data)
         sent_cmd = data
         return old_chansend(job, "exit 0\n")
@@ -336,7 +364,9 @@ return {
         config.options.sync = { sync_mode = "buffer" }
         sync.sync_maildir()
         H.wait_until(function()
-          return table.concat(H.current_lines(), "\n"):find("Maildir sync finished successfully!", 1, true)
+          return table
+            .concat(H.current_lines(), "\n")
+            :find("Maildir sync finished successfully!", 1, true)
         end, 3000)
 
         config.options.maildir_sync_cmd = "false &&"
@@ -365,8 +395,12 @@ return {
         local old_is_running = sync.is_job_running
         local created = false
         sync.set_current_sync_job(999999)
-        sync.is_job_running = function() return true end
-        sync.create_job = function() created = true end
+        sync.is_job_running = function()
+          return true
+        end
+        sync.create_job = function()
+          created = true
+        end
         config.options.sync = { sync_mode = "background" }
         sync.sync_maildir()
         H.eq(false, created)
@@ -380,7 +414,9 @@ return {
       vim.fn.chansend = old_chansend
       vim.notify = old_notify
       sync.set_current_sync_job(nil)
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
 }

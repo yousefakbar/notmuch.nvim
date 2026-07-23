@@ -8,20 +8,37 @@ end
 
 function H.eq(expected, actual, msg)
   if expected ~= actual then
-    error((msg or "values are not equal") .. "\nexpected: " .. vim.inspect(expected) .. "\nactual:   " .. vim.inspect(actual), 2)
+    error(
+      (msg or "values are not equal")
+        .. "\nexpected: "
+        .. vim.inspect(expected)
+        .. "\nactual:   "
+        .. vim.inspect(actual),
+      2
+    )
   end
 end
 
 function H.same(expected, actual, msg)
   if not vim.deep_equal(expected, actual) then
-    error((msg or "values are not deeply equal") .. "\nexpected: " .. vim.inspect(expected) .. "\nactual:   " .. vim.inspect(actual), 2)
+    error(
+      (msg or "values are not deeply equal")
+        .. "\nexpected: "
+        .. vim.inspect(expected)
+        .. "\nactual:   "
+        .. vim.inspect(actual),
+      2
+    )
   end
 end
 
 function H.matches(text, pattern, msg)
   text = tostring(text)
   if not text:match(pattern) then
-    error((msg or "expected text to match pattern") .. "\npattern: " .. pattern .. "\ntext:    " .. text, 2)
+    error(
+      (msg or "expected text to match pattern") .. "\npattern: " .. pattern .. "\ntext:    " .. text,
+      2
+    )
   end
 end
 
@@ -33,7 +50,10 @@ function H.contains(haystack, needle, msg)
     text = tostring(haystack)
   end
   if not text:find(needle, 1, true) then
-    error((msg or "expected text to contain needle") .. "\nneedle: " .. needle .. "\ntext:   " .. text, 2)
+    error(
+      (msg or "expected text to contain needle") .. "\nneedle: " .. needle .. "\ntext:   " .. text,
+      2
+    )
   end
 end
 
@@ -43,13 +63,28 @@ function H.list_contains(list, value, msg)
       return true
     end
   end
-  error((msg or "expected list to contain value") .. "\nvalue: " .. vim.inspect(value) .. "\nlist:  " .. vim.inspect(list), 2)
+  error(
+    (msg or "expected list to contain value")
+      .. "\nvalue: "
+      .. vim.inspect(value)
+      .. "\nlist:  "
+      .. vim.inspect(list),
+    2
+  )
 end
 
 function H.system(args)
   local result = vim.system(args, { text = true }):wait()
   if result.code ~= 0 then
-    error("command failed: " .. table.concat(args, " ") .. "\nstdout: " .. (result.stdout or "") .. "\nstderr: " .. (result.stderr or ""), 2)
+    error(
+      "command failed: "
+        .. table.concat(args, " ")
+        .. "\nstdout: "
+        .. (result.stdout or "")
+        .. "\nstderr: "
+        .. (result.stderr or ""),
+      2
+    )
   end
   return result.stdout or ""
 end

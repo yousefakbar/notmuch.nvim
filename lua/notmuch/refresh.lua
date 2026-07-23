@@ -1,6 +1,6 @@
 local r = {}
 local v = vim.api
-local nm = require('notmuch')
+local nm = require("notmuch")
 
 -- Refreshes the search results buffer
 --
@@ -14,8 +14,8 @@ local nm = require('notmuch')
 r.refresh_search_buffer = function()
   local line = v.nvim_get_current_line()
   local threadid = string.match(line, "%S+", 8)
-  local search = string.match(v.nvim_buf_get_name(0), '%a+:%C+')
-  v.nvim_command('bwipeout')
+  local search = string.match(v.nvim_buf_get_name(0), "%a+:%C+")
+  v.nvim_command("bwipeout")
   nm.search_terms(search, threadid)
   vim.fn.search(threadid)
 end
@@ -30,8 +30,8 @@ end
 -- -- Normally invoked by pressing `r` in the thread view buffer
 -- lua require('notmuch.refresh').refresh_thread_buffer()
 r.refresh_thread_buffer = function()
-  local thread = string.match(v.nvim_buf_get_name(0), 'thread:%C+')
-  v.nvim_command('bwipeout')
+  local thread = string.match(v.nvim_buf_get_name(0), "thread:%C+")
+  v.nvim_command("bwipeout")
   nm.show_thread(thread)
 end
 
@@ -46,7 +46,7 @@ end
 -- -- Normally invoked by pressing `r` in the Tags buffer
 -- lua require('notmuch.refresh').refresh_hello_buffer()
 r.refresh_hello_buffer = function()
-  v.nvim_command('bwipeout')
+  v.nvim_command("bwipeout")
   nm.show_all_tags()
 end
 

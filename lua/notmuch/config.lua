@@ -8,25 +8,29 @@ local C = {}
 C.defaults = function()
   -- Helper to safely get notmuch config variables
   local function get_notmuch_config(key, fallback)
-    local result = vim.fn.system('notmuch config get ' .. key):gsub('\n', '')
-    if vim.v.shell_error ~= 0 or result == '' or result:match('^%s*$') or result:match('notmuch setup') then
-      if result:match('command not found') or result:match('not found') then
-	vim.notify('notmuch command not found. Please install notmuch.', vim.log.levels.ERROR)
+    local result = vim.fn.system("notmuch config get " .. key):gsub("\n", "")
+    if
+      vim.v.shell_error ~= 0
+      or result == ""
+      or result:match("^%s*$")
+      or result:match("notmuch setup")
+    then
+      if result:match("command not found") or result:match("not found") then
+        vim.notify("notmuch command not found. Please install notmuch.", vim.log.levels.ERROR)
       end
       return fallback
     end
     return result
   end
 
-  local name = get_notmuch_config('user.name', nil)
-  local email = get_notmuch_config('user.primary_email', nil)
-  local db_path = get_notmuch_config('database.path', nil)
+  local name = get_notmuch_config("user.name", nil)
+  local email = get_notmuch_config("user.primary_email", nil)
+  local db_path = get_notmuch_config("database.path", nil)
 
   -- Validate required configuration form notmuch and fail-fast
   if not db_path then
     vim.notify(
-      'notmuch.nvim: database.path not configured.\n' ..
-      'Please run: notmuch setup',
+      "notmuch.nvim: database.path not configured.\n" .. "Please run: notmuch setup",
       vim.log.levels.ERROR
     )
     return nil
@@ -35,21 +39,21 @@ C.defaults = function()
   -- Validate user name and email from notmuch config
   if not name or not email then
     vim.notify(
-      'notmuch.nvim: user.name or user.primary_email not configured.\n' ..
-      'Please run: notmuch setup',
+      "notmuch.nvim: user.name or user.primary_email not configured.\n"
+        .. "Please run: notmuch setup",
       vim.log.levels.WARN
     )
-    name = name or 'User'
-    email = email or 'user@localhost'
+    name = name or "User"
+    email = email or "user@localhost"
   end
 
   local defaults = {
     notmuch_db_path = db_path,
-    from = name .. ' <' .. email .. '>',
-    maildir_sync_cmd = 'mbsync -a',
+    from = name .. " <" .. email .. ">",
+    maildir_sync_cmd = "mbsync -a",
     logfile = nil,
     sync = {
-      sync_mode = "buffer",  -- "background" | "buffer" | "terminal"
+      sync_mode = "buffer", -- "background" | "buffer" | "terminal"
       --   background: Silent sync in background, notifications only
       --   buffer: Structured async output in dedicated buffer, no stdin (default)
       --   terminal: Real PTY terminal with stdin support for GPG/OAuth prompts
@@ -65,14 +69,14 @@ C.defaults = function()
       auto_open_attachment_window = false,
     },
     open_handler = function(attachment)
-      require('notmuch.handlers').default_open_handler(attachment)
+      require("notmuch.handlers").default_open_handler(attachment)
     end,
     view_handler = function(attachment)
-      return require('notmuch.handlers').default_view_handler(attachment)
+      return require("notmuch.handlers").default_view_handler(attachment)
     end,
     keymaps = { -- This should capture all notmuch.nvim related keymappings
-      sendmail = '<C-g><C-g>',
-      attachment_window = '<C-g><C-a>',
+      sendmail = "<C-g><C-g>",
+      attachment_window = "<C-g><C-a>",
     },
   }
   return defaults
@@ -94,7 +98,7 @@ C.setup = function(opts)
 
   if not defaults then
     vim.notify(
-      'notmuch.nvim: Failed to load. Please configure notmuch first.',
+      "notmuch.nvim: Failed to load. Please configure notmuch first.",
       vim.log.levels.ERROR
     )
     return false
@@ -105,15 +109,19 @@ C.setup = function(opts)
     options.notmuch_db_path = vim.fn.expand(options.notmuch_db_path)
   end
 
-  C.options = vim.tbl_deep_extend('force', defaults, options)
+  C.options = vim.tbl_deep_extend("force", defaults, options)
 
   -- Validate and normalise the queries list
   if C.options.queries and #C.options.queries > 0 then
     local valid = {}
     for _, q in ipairs(C.options.queries) do
-      if type(q) == 'table'
-        and type(q.name) == 'string' and q.name ~= ''
-        and type(q.query) == 'string' and q.query ~= '' then
+      if
+        type(q) == "table"
+        and type(q.name) == "string"
+        and q.name ~= ""
+        and type(q.query) == "string"
+        and q.query ~= ""
+      then
         table.insert(valid, { name = q.name, query = q.query })
       else
         vim.notify(

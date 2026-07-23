@@ -14,7 +14,9 @@ local function with_mock_notmuch(overrides, fn)
     nm[key] = value
   end
 
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 return {

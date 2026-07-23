@@ -13,9 +13,9 @@ local A = {}
 -- MODULE IMPORTS
 -- -----------------------------------------------------------------------------
 
-local state = require('notmuch.attach.state')
-local scratch = require('notmuch.attach.scratch')
-local commands = require('notmuch.attach.commands')
+local state = require("notmuch.attach.state")
+local scratch = require("notmuch.attach.scratch")
+local commands = require("notmuch.attach.commands")
 
 -- -----------------------------------------------------------------------------
 -- Draft attachment state

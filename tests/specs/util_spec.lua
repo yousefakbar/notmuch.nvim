@@ -93,7 +93,9 @@ return {
       vim.api.nvim_win_set_cursor(0, { 2, 0 })
       local old_print = print
       local msg
-      print = function(text) msg = text end
+      print = function(text)
+        msg = text
+      end
       H.eq(nil, util.find_cursor_msg_id())
       H.contains(msg, "No ID found")
       print = old_print

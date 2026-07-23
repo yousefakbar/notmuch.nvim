@@ -22,8 +22,8 @@ local S = {}
 -- -----------------------------------------------------------------------------
 
 local v = vim.api
-local util = require('notmuch.util')
-local draft = require('notmuch.draft')
+local util = require("notmuch.util")
+local draft = require("notmuch.draft")
 
 -- -----------------------------------------------------------------------------
 -- PRIVATE HELPERS
@@ -47,20 +47,20 @@ local function normalize_buf(buf)
   end
 
   if not v.nvim_buf_is_valid(buf) then
-    error('Invalid buffer: ' .. tostring(buf))
+    error("Invalid buffer: " .. tostring(buf))
   end
 
   return buf
 end
 
 local function normalize_path(path)
-  path = trim(tostring(path or ''))
-  if path == '' then
-    return ''
+  path = trim(tostring(path or ""))
+  if path == "" then
+    return ""
   end
 
   path = vim.fn.expand(path)
-  path = vim.fn.fnamemodify(path, ':p')
+  path = vim.fn.fnamemodify(path, ":p")
 
   return path
 end
@@ -69,15 +69,15 @@ local function normalize_attachments(attachments)
   local normalized = {}
   local seen = {}
 
-  if type(attachments) ~= 'table' then
+  if type(attachments) ~= "table" then
     return normalized
   end
 
   for _, path in ipairs(attachments) do
-    if type(path) == 'string' then
+    if type(path) == "string" then
       local filepath = normalize_path(path)
 
-      if filepath ~= '' and not seen[filepath] then
+      if filepath ~= "" and not seen[filepath] then
         seen[filepath] = true
         table.insert(normalized, filepath)
       end
@@ -103,8 +103,8 @@ function S.get(buf)
   buf = normalize_buf(buf)
 
   -- Fetch attachments from the state mirror (buffer-local variable)
-  local ok, attachments = pcall(v.nvim_buf_get_var, buf, 'notmuch_attachments')
-  if not ok or type(attachments) ~= 'table' then
+  local ok, attachments = pcall(v.nvim_buf_get_var, buf, "notmuch_attachments")
+  if not ok or type(attachments) ~= "table" then
     return {}
   end
 
@@ -128,7 +128,7 @@ function S.set(buf, attachments, opts)
   local normalized = normalize_attachments(attachments)
 
   -- Save normalized `attachments` to buffer-local variable (mirror of state)
-  v.nvim_buf_set_var(buf, 'notmuch_attachments', normalized)
+  v.nvim_buf_set_var(buf, "notmuch_attachments", normalized)
 
   -- If `persist` option enabled, save changes to JSON sidecar (canonical state)
   if opts.persist ~= false then
@@ -140,7 +140,7 @@ function S.set(buf, attachments, opts)
 
   -- Optionally refresh the scratch buffer if enabled in `opts`
   if opts.refresh_scratch ~= false then
-    local ok_scratch, scratch = pcall(require, 'notmuch.attach.scratch')
+    local ok_scratch, scratch = pcall(require, "notmuch.attach.scratch")
     if ok_scratch and scratch.refresh then
       scratch.refresh(buf)
     end
@@ -166,8 +166,8 @@ function S.add(buf, path, opts)
 
   -- Normalize attachment path
   local filepath = normalize_path(path)
-  if filepath == '' then
-    return false, 'Attachment path is empty'
+  if filepath == "" then
+    return false, "Attachment path is empty"
   end
 
   -- Validate attachment path
@@ -182,7 +182,7 @@ function S.add(buf, path, opts)
   -- Check if filepath is already attached in state, return accordingly
   for _, existing in ipairs(attachments) do
     if existing == filepath then
-      return false, 'Already attached: ' .. filepath
+      return false, "Already attached: " .. filepath
     end
   end
 
@@ -192,7 +192,7 @@ function S.add(buf, path, opts)
   -- Set/persist to the state
   local ok = S.set(buf, attachments, opts)
   if not ok then
-    return false, 'Failed to persist attachment metadata'
+    return false, "Failed to persist attachment metadata"
   end
 
   return true, filepath, #attachments
@@ -225,7 +225,7 @@ function S.remove(buf, path, opts)
 
   -- If attachment is not already in attachements state, return early
   if not found_index then
-    return false, 'File not in attachments: ' .. filepath
+    return false, "File not in attachments: " .. filepath
   end
 
   -- Remove found attachment from the list
@@ -234,7 +234,7 @@ function S.remove(buf, path, opts)
   -- Persist/save to state
   local ok = S.set(buf, attachments, opts)
   if not ok then
-    return false, 'Failed to persist attachment metadata'
+    return false, "Failed to persist attachment metadata"
   end
 
   return true, filepath, #attachments

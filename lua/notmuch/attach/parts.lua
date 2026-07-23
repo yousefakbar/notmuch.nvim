@@ -5,9 +5,9 @@ local P = {}
 --------------------------------------------------------------------------------
 
 local v = vim.api
-local config = require('notmuch.config')
-local util = require('notmuch.util')
-local thread = require('notmuch.thread')
+local config = require("notmuch.config")
+local util = require("notmuch.util")
+local thread = require("notmuch.thread")
 
 --------------------------------------------------------------------------------
 -- PRIVATE FUNCTIONS
@@ -18,7 +18,7 @@ local function show_github_patch(link)
   v.nvim_buf_set_name(buf, link)
   v.nvim_win_set_buf(0, buf)
   v.nvim_command("silent 0read! curl -Ls " .. link)
-  v.nvim_win_set_cursor(0, { 1, 0})
+  v.nvim_win_set_cursor(0, { 1, 0 })
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
   vim.bo.filetype = "gitsendemail"
   vim.bo.modifiable = false
@@ -43,31 +43,26 @@ end
 ---@param parts_list MimePart[] Array of MIME part information tables
 ---@return string[] Array of formatted display lines (including header)
 local function format_part_line(parts_list)
-  local output = {string.format("%-2s %-5s %-45s %6s",
-    "?", "ID", "File", "Size"
-  )}
+  local output = { string.format("%-2s %-5s %-45s %6s", "?", "ID", "File", "Size") }
 
   for _, part in ipairs(parts_list) do
     -- Determine disposition indicator
-    local indicator = 'A'
-    if part.disposition == 'inline' then indicator = 'I' end
+    local indicator = "A"
+    if part.disposition == "inline" then
+      indicator = "I"
+    end
 
     -- Choose display name
     local filename = part.filename
-    if filename == '' then
-      filename = 'body (' .. part.content_type .. ')'
+    if filename == "" then
+      filename = "body (" .. part.content_type .. ")"
     end
 
     -- Format size to human-readable
     local size = util.format_size(part.size)
 
     -- Build the display string with aligned columns
-    table.insert(output, string.format("%-2s %-5s %-45s %6s",
-      indicator,
-      part.id,
-      filename,
-      size
-    ))
+    table.insert(output, string.format("%-2s %-5s %-45s %6s", indicator, part.id, filename, size))
   end
 
   return output
@@ -95,10 +90,10 @@ end
 ---@param part table A MIME part object from notmuch JSON (must have 'content-type' field)
 ---@param parts_list MimePart[] Accumulator array to collect openable parts (modified in place)
 local function parse_mime_tree(part, parts_list)
-  local content_type = part['content-type']
+  local content_type = part["content-type"]
 
   -- Check if part is a multipart container
-  if content_type:match('^multipart/') then
+  if content_type:match("^multipart/") then
     -- Don't add to the parts_list, but add its children (recursively)
     if part.content then
       for _, child_part in ipairs(part.content) do
@@ -109,9 +104,9 @@ local function parse_mime_tree(part, parts_list)
   end
 
   -- Otherwise, leaf node goes into the parts_list
-  local disposition = part['content-disposition'] or 'inline'
-  if disposition == 'inline' and not content_type:match('^text/') then
-    disposition = 'attachment'
+  local disposition = part["content-disposition"] or "inline"
+  if disposition == "inline" and not content_type:match("^text/") then
+    disposition = "attachment"
   end
 
   -- Formulate part and add to parts_list
@@ -120,7 +115,7 @@ local function parse_mime_tree(part, parts_list)
     content_type = content_type,
     filename = part.filename or "",
     disposition = disposition,
-    size = part['content-length'] or 0
+    size = part["content-length"] or 0,
   })
 end
 
@@ -141,7 +136,7 @@ end
 local function get_part_at_cursor()
   -- Get the buffer-local MIME parts list variable
   local bufnr = v.nvim_get_current_buf()
-  local ok, parts_list = pcall(v.nvim_buf_get_var, bufnr, 'mime_parts_list')
+  local ok, parts_list = pcall(v.nvim_buf_get_var, bufnr, "mime_parts_list")
 
   -- If no attachments/parts, return gracefully
   if not ok or not parts_list then
@@ -182,34 +177,41 @@ end
 function P.get_attachments_from_cursor_msg()
   -- Get msg ID from cursor location and validate
   local id = thread.get_current_message_id()
-  if id == nil then return nil end
+  if id == nil then
+    return nil
+  end
 
   -- If attachment buffer already exists, notify and return
-  local bufnr = vim.fn.bufnr('id:' .. id)
+  local bufnr = vim.fn.bufnr("id:" .. id)
   if bufnr ~= -1 then
-    vim.notify('Attachment list for this msg is already open in buffer: ' .. bufnr, vim.log.levels.WARN)
+    vim.notify(
+      "Attachment list for this msg is already open in buffer: " .. bufnr,
+      vim.log.levels.WARN
+    )
     return nil
   end
 
   -- Create new attachment listing buffer (`notmuch-attach`)
-  v.nvim_command('belowright 8new')
-  v.nvim_buf_set_name(0, 'id:' .. id)
+  v.nvim_command("belowright 8new")
+  v.nvim_buf_set_name(0, "id:" .. id)
   vim.bo.buftype = "nofile"
 
   -- Get all MIME parts from `msg` in JSON format
-  local result = vim.json.decode(vim.fn.system("notmuch show --exclude=false --part=0 --format=json 'id:" .. id .. "'"))
+  local result = vim.json.decode(
+    vim.fn.system("notmuch show --exclude=false --part=0 --format=json 'id:" .. id .. "'")
+  )
   local parts_list = {}
-  parse_mime_tree(result['body'][1], parts_list)
+  parse_mime_tree(result["body"][1], parts_list)
   local lines = format_part_line(parts_list)
 
   -- Save MIME parts list to buffer local variable
-  v.nvim_buf_set_var(0, 'mime_parts_list', parts_list)
+  v.nvim_buf_set_var(0, "mime_parts_list", parts_list)
 
   -- Add hints and output, set filetype, and switch off modifiable
   v.nvim_buf_set_lines(0, 0, 0, true, { "Hints: v: View | o: Open | s: Save | q: Close", "" })
   v.nvim_buf_set_lines(0, -2, -1, true, lines)
   v.nvim_win_set_cursor(0, { 1, 0 })
-  vim.bo.filetype="notmuch-attach"
+  vim.bo.filetype = "notmuch-attach"
   vim.bo.modifiable = false
 end
 
@@ -232,14 +234,16 @@ function P.save_attachment_part(savedir, prompt_user)
   end
 
   -- Extract message ID from buffer name
-  local id = string.match(v.nvim_buf_get_name(0), 'id:%C+')
+  local id = string.match(v.nvim_buf_get_name(0), "id:%C+")
 
   -- Use actual filename if available, otherwise generate from content-type
-  local filename = part.filename:gsub('/', '-')
+  local filename = part.filename:gsub("/", "-")
   if filename == "" then
-    local ext = string.match(part.content_type, '%w+/(%w+)')
-    if ext == 'plain' then ext = 'txt' end
-    filename = 'notmuch.' .. ext
+    local ext = string.match(part.content_type, "%w+/(%w+)")
+    if ext == "plain" then
+      ext = "txt"
+    end
+    filename = "notmuch." .. ext
   end
 
   -- Set directory in which to save the attachment part
@@ -251,15 +255,15 @@ function P.save_attachment_part(savedir, prompt_user)
   if prompt_user then
     -- Determine default directory (savedir or current directory)
     local default_dir = savedir or vim.fn.getcwd()
-    local default_path = default_dir .. '/' .. filename
+    local default_path = default_dir .. "/" .. filename
 
     -- Prompt user for save location
-    filepath = vim.fn.input('Save file: ', default_path, 'file')
-    vim.cmd('redraw')
+    filepath = vim.fn.input("Save file: ", default_path, "file")
+    vim.cmd("redraw")
 
     -- If user cancels (ESC or empty input), return nil
-    if filepath == '' then
-      vim.notify('Save cancelled', vim.log.levels.INFO)
+    if filepath == "" then
+      vim.notify("Save cancelled", vim.log.levels.INFO)
       return nil
     end
 
@@ -269,49 +273,53 @@ function P.save_attachment_part(savedir, prompt_user)
     -- If user provided a directory, append the filename
     if vim.fn.isdirectory(filepath) == 1 then
       -- Remove trailing slash if present, then add filename
-      filepath = filepath:gsub('/$', '') .. '/' .. filename
+      filepath = filepath:gsub("/$", "") .. "/" .. filename
     end
 
     -- Extract directory from filepath
-    local dir = vim.fn.fnamemodify(filepath, ':h')
+    local dir = vim.fn.fnamemodify(filepath, ":h")
 
     -- Check if directory exists
-    if  vim.fn.isdirectory(dir) == 0 then
-      vim.notify('Directory does not exist', vim.log.levels.ERROR)
+    if vim.fn.isdirectory(dir) == 0 then
+      vim.notify("Directory does not exist", vim.log.levels.ERROR)
       return nil
     end
 
     -- Check if directory is writable
     if vim.fn.filewritable(dir) ~= 2 then
-      vim.notify('Directory is not writable', vim.log.levels.ERROR)
+      vim.notify("Directory is not writable", vim.log.levels.ERROR)
       return nil
     end
 
     -- Check if file already exists - If so, prompt for confirmation
     if vim.fn.filereadable(filepath) == 1 then
-      local confirm = vim.fn.confirm('File exists. Overwrite?', '&Yes\n&No', 2)
-      vim.cmd('redraw')
+      local confirm = vim.fn.confirm("File exists. Overwrite?", "&Yes\n&No", 2)
+      vim.cmd("redraw")
       if confirm ~= 1 then
-        vim.notify('Save cancelled', vim.log.levels.INFO)
+        vim.notify("Save cancelled", vim.log.levels.INFO)
         return nil
       end
     end
   else
     -- No prompt -- This is used by open/view attachment
-    local dir = savedir or '.'
-    filepath = dir .. '/' .. filename
+    local dir = savedir or "."
+    filepath = dir .. "/" .. filename
   end
 
   -- Save the file using notmuch (properly escape filepath)
-  local cmd = string.format("notmuch show --exclude=false --part=%d '%s' > %s",
-    part.id, id, vim.fn.shellescape(filepath))
+  local cmd = string.format(
+    "notmuch show --exclude=false --part=%d '%s' > %s",
+    part.id,
+    id,
+    vim.fn.shellescape(filepath)
+  )
   vim.fn.system(cmd)
 
   if vim.v.shell_error == 0 then
-    print('Saved to: ' .. filepath)
+    print("Saved to: " .. filepath)
     return filepath
   else
-    print('Failed to save attachment')
+    print("Failed to save attachment")
     return nil
   end
 end
@@ -323,7 +331,7 @@ end
 --
 ---@return nil
 function P.open_attachment_part()
-  local filepath = P.save_attachment_part('/tmp', false)
+  local filepath = P.save_attachment_part("/tmp", false)
 
   if not filepath then
     return nil
@@ -341,7 +349,7 @@ end
 ---@return nil
 function P.view_attachment_part()
   -- Save to temp directory without prompting
-  local filepath = P.save_attachment_part('/tmp', false)
+  local filepath = P.save_attachment_part("/tmp", false)
 
   -- If save fails, return early
   if not filepath then
@@ -350,7 +358,7 @@ function P.view_attachment_part()
 
   -- Process with user's configured view_handler
   local output = config.options.view_handler({ path = vim.fn.expand(filepath) })
-  local lines = vim.split(output, '\n')
+  local lines = vim.split(output, "\n")
 
   -- Create new buffer for floating window
   local buf = v.nvim_create_buf(false, true)
@@ -373,25 +381,27 @@ function P.view_attachment_part()
 
   v.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
-  v.nvim_set_option_value('modifiable', false, { buf = buf })
-  vim.keymap.set('n', 'q', function()
+  v.nvim_set_option_value("modifiable", false, { buf = buf })
+  vim.keymap.set("n", "q", function()
     v.nvim_win_close(win, false)
   end, { buffer = buf })
 end
 
 function P.get_urls_from_cursor_msg()
-  if vim.fn.exists(':YTerm') == 0 then
+  if vim.fn.exists(":YTerm") == 0 then
     print("Can't launch URL selector (:YTerm command not found)")
     return nil
   end
   local id = thread.get_current_message_id()
-  if id == nil then return nil end
+  if id == nil then
+    return nil
+  end
   v.nvim_command('YTerm "notmuch show id:' .. id .. ' | urlextract"')
 end
 
 function P.follow_github_patch(line)
   -- https://github.com/neomutt/neomutt/pull/2774.patch
-  local link = string.match(line, 'http[s]://github%.com/.+/.+/pull/%d+%.patch')
+  local link = string.match(line, "http[s]://github%.com/.+/.+/pull/%d+%.patch")
   if link == nil then
     return nil
   end

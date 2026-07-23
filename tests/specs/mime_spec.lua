@@ -133,7 +133,9 @@ return {
     run = function()
       local mime = require("notmuch.mime")
       local old_boundary = mime.get_boundary
-      mime.get_boundary = function() return "BOUNDARY" end
+      mime.get_boundary = function()
+        return "BOUNDARY"
+      end
 
       local dir = H.tmpdir()
       local file = H.write_file(dir .. "/body.txt", "hello\n")
@@ -160,7 +162,9 @@ return {
       local mime = require("notmuch.mime")
       local boundaries = { "OUTER", "INNER" }
       local old_boundary = mime.get_boundary
-      mime.get_boundary = function() return table.remove(boundaries, 1) end
+      mime.get_boundary = function()
+        return table.remove(boundaries, 1)
+      end
 
       local dir = H.tmpdir()
       local plain = H.write_file(dir .. "/body.txt", "plain body\n")
@@ -177,7 +181,12 @@ return {
               { file = html, type = "text/html; charset=utf-8" },
             },
           },
-          { file = attachment, type = "application/octet-stream", attachment = true, encoding = "base64" },
+          {
+            file = attachment,
+            type = "application/octet-stream",
+            attachment = true,
+            encoding = "base64",
+          },
         },
       })
 
@@ -194,7 +203,7 @@ return {
       H.contains(text, "--INNER\nContent-Type: text/html; charset=utf-8")
       H.contains(text, "<p>html body</p>")
       H.contains(text, "--INNER--")
-      H.contains(text, "Content-Disposition: attachment; filename=\"file.bin\"")
+      H.contains(text, 'Content-Disposition: attachment; filename="file.bin"')
       H.contains(text, "--OUTER--")
     end,
   },

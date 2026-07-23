@@ -24,14 +24,20 @@ local function with_view_mocks(mime_type, ext_path, available, results, fn)
     calls[#calls + 1] = cmd
     local key = table.concat(cmd, " ")
     local result = results[key] or { code = 0, stdout = cmd[1] .. " output" }
-    return { wait = function() return result end }
+    return {
+      wait = function()
+        return result
+      end,
+    }
   end
 
   local ok, err = pcall(fn, calls, ext_path)
   vim.fn.executable = old_executable
   vim.fn.system = old_system_fn
   vim.system = old_system
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 return {
@@ -44,7 +50,12 @@ return {
 
       vim.ui.open = function(path)
         opened = path
-        return { wait = function() return { code = 0 } end }, nil
+        return {
+          wait = function()
+            return { code = 0 }
+          end,
+        },
+          nil
       end
 
       handlers.default_open_handler({ path = "/tmp/file.txt" })
@@ -90,7 +101,11 @@ return {
       vim.system = function(cmd, opts)
         captured_cmd = cmd
         captured_opts = opts
-        return { wait = function() return { code = 0, stdout = "" } end }
+        return {
+          wait = function()
+            return { code = 0, stdout = "" }
+          end,
+        }
       end
 
       handlers.default_open_handler({ path = "/tmp/file.txt" })
@@ -124,16 +139,43 @@ return {
     run = function()
       local handlers = require("notmuch.handlers")
       local cases = {
-        { mime = "text/html", path = "/tmp/page.html", tools = { "w3m", "lynx", "elinks" }, expected = { "w3m", "-T", "text/html", "-dump", "/tmp/page.html" } },
-        { mime = "application/pdf", path = "/tmp/doc.pdf", tools = { "pdftotext", "mutool" }, expected = { "pdftotext", "-layout", "/tmp/doc.pdf", "-" } },
-        { mime = "image/png", path = "/tmp/img.png", tools = { "chafa", "catimg", "viu", "exiftool", "identify" }, expected = { "chafa", "--size", "80x40", "/tmp/img.png" } },
-        { mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document", path = "/tmp/doc.docx", tools = { "pandoc", "docx2txt" }, expected = { "pandoc", "-t", "plain", "/tmp/doc.docx" } },
-        { mime = "text/markdown", path = "/tmp/readme.md", tools = { "pandoc", "mdcat" }, expected = { "pandoc", "-t", "plain", "/tmp/readme.md" } },
+        {
+          mime = "text/html",
+          path = "/tmp/page.html",
+          tools = { "w3m", "lynx", "elinks" },
+          expected = { "w3m", "-T", "text/html", "-dump", "/tmp/page.html" },
+        },
+        {
+          mime = "application/pdf",
+          path = "/tmp/doc.pdf",
+          tools = { "pdftotext", "mutool" },
+          expected = { "pdftotext", "-layout", "/tmp/doc.pdf", "-" },
+        },
+        {
+          mime = "image/png",
+          path = "/tmp/img.png",
+          tools = { "chafa", "catimg", "viu", "exiftool", "identify" },
+          expected = { "chafa", "--size", "80x40", "/tmp/img.png" },
+        },
+        {
+          mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          path = "/tmp/doc.docx",
+          tools = { "pandoc", "docx2txt" },
+          expected = { "pandoc", "-t", "plain", "/tmp/doc.docx" },
+        },
+        {
+          mime = "text/markdown",
+          path = "/tmp/readme.md",
+          tools = { "pandoc", "mdcat" },
+          expected = { "pandoc", "-t", "plain", "/tmp/readme.md" },
+        },
       }
 
       for _, case in ipairs(cases) do
         local available = {}
-        for _, tool in ipairs(case.tools) do available[tool] = true end
+        for _, tool in ipairs(case.tools) do
+          available[tool] = true
+        end
         with_view_mocks(case.mime, case.path, available, {}, function(calls)
           local output = handlers.default_view_handler({ path = case.path })
           H.contains(output, case.expected[1] .. " output")

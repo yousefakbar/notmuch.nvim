@@ -16,7 +16,9 @@ local function with_mocked_loop(run)
   vim.uv.new_pipe = function()
     local pipe = {
       closed = false,
-      close = function(self) self.closed = true end,
+      close = function(self)
+        self.closed = true
+      end,
     }
     table.insert(state.pipes, pipe)
     return pipe
@@ -25,8 +27,12 @@ local function with_mocked_loop(run)
   vim.uv.spawn = function(cmd, opts, on_exit)
     state.spawned = { cmd = cmd, opts = opts, on_exit = on_exit }
     local handle = {
-      close = function() state.closed_handle = true end,
-      kill = function() state.killed = true end,
+      close = function()
+        state.closed_handle = true
+      end,
+      kill = function()
+        state.killed = true
+      end,
     }
     state.handle = handle
     return handle
@@ -42,7 +48,9 @@ local function with_mocked_loop(run)
   vim.uv.spawn = old_spawn
   vim.uv.read_start = old_read_start
 
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 return {
@@ -64,12 +72,18 @@ return {
 
         state.reads[state.pipes[1]](nil, "thread:one subject\n")
         vim.wait(20)
-        H.same({ "Hints: keep", "thread:one subject" }, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
+        H.same(
+          { "Hints: keep", "thread:one subject" },
+          vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+        )
         H.eq(false, vim.bo[buf].modifiable)
 
         state.reads[state.pipes[1]](nil, "thread:two subject\n")
         vim.wait(20)
-        H.same({ "Hints: keep", "thread:one subject", "thread:two subject" }, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
+        H.same(
+          { "Hints: keep", "thread:one subject", "thread:two subject" },
+          vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+        )
         H.eq(false, vim.bo[buf].modifiable)
       end)
     end,
@@ -89,7 +103,10 @@ return {
 
         state.reads[state.pipes[1]](nil, "tial subject\nthread:next subject\n")
         vim.wait(20)
-        H.same({ "Hints: keep", "thread:partial subject", "thread:next subject" }, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
+        H.same(
+          { "Hints: keep", "thread:partial subject", "thread:next subject" },
+          vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+        )
       end)
     end,
   },
@@ -113,7 +130,9 @@ return {
       with_mocked_loop(function(state)
         local buf = vim.api.nvim_create_buf(true, true)
         local completed = false
-        require("notmuch.async").run_notmuch_search("tag:done", buf, function() completed = true end)
+        require("notmuch.async").run_notmuch_search("tag:done", buf, function()
+          completed = true
+        end)
 
         state.spawned.on_exit(0, 0)
         vim.wait(20)
@@ -130,7 +149,9 @@ return {
       with_mocked_loop(function(state)
         local old_notify = vim.notify
         local note
-        vim.notify = function(msg) note = msg end
+        vim.notify = function(msg)
+          note = msg
+        end
 
         local ok, err = pcall(function()
           local buf = vim.api.nvim_create_buf(true, true)
@@ -141,7 +162,9 @@ return {
         end)
 
         vim.notify = old_notify
-        if not ok then error(err, 0) end
+        if not ok then
+          error(err, 0)
+        end
       end)
     end,
   },

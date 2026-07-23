@@ -17,8 +17,8 @@ local C = {}
 -- -----------------------------------------------------------------------------
 
 local v = vim.api
-local state = require('notmuch.attach.state')
-local scratch = require('notmuch.attach.scratch')
+local state = require("notmuch.attach.state")
+local scratch = require("notmuch.attach.scratch")
 
 -- -----------------------------------------------------------------------------
 -- PRIVATE HELPERS
@@ -32,7 +32,7 @@ local function normalize_buf(buf)
 
   -- Verify `buf` is a valid buffer
   if not v.nvim_buf_is_valid(buf) then
-    error('Invalid buffer: ' .. tostring(buf))
+    error("Invalid buffer: " .. tostring(buf))
   end
 
   return buf
@@ -53,15 +53,16 @@ function C.attach_handler(buf)
     local ok, filepath_or_err, count = state.add(buf, opts.args)
 
     if not ok then
-      local is_duplicate = vim.startswith(filepath_or_err, 'Already attached:')
+      local is_duplicate = vim.startswith(filepath_or_err, "Already attached:")
       local level = is_duplicate and vim.log.levels.WARN or vim.log.levels.ERROR
-      local msg = is_duplicate and filepath_or_err or ('Cannot attach ' .. opts.args .. '\n' .. filepath_or_err)
+      local msg = is_duplicate and filepath_or_err
+        or ("Cannot attach " .. opts.args .. "\n" .. filepath_or_err)
       vim.notify(msg, level)
       return
     end
 
     vim.notify(
-      string.format('Attached: %s (%d total)', filepath_or_err, count),
+      string.format("Attached: %s (%d total)", filepath_or_err, count),
       vim.log.levels.INFO
     )
   end
@@ -83,7 +84,7 @@ function C.remove_handler(buf)
     end
 
     vim.notify(
-      string.format('Removed: %s (%d remaining)', filepath_or_err, count),
+      string.format("Removed: %s (%d remaining)", filepath_or_err, count),
       vim.log.levels.INFO
     )
   end
@@ -100,16 +101,16 @@ function C.list_handler(buf)
     local attachments = state.get(buf)
 
     if #attachments == 0 then
-      print('No attachments. Try adding with :Attach')
+      print("No attachments. Try adding with :Attach")
       return
     end
 
-    print(string.format('Attachments (%d):', #attachments))
+    print(string.format("Attachments (%d):", #attachments))
 
     for i, path in ipairs(attachments) do
       local stat = vim.uv.fs_stat(path)
       local size_kb = stat and math.floor(stat.size / 1024) or 0
-      print(string.format('  [%d] %s (%d KB)', i, path, size_kb))
+      print(string.format("  [%d] %s (%d KB)", i, path, size_kb))
     end
   end
 end
@@ -145,29 +146,29 @@ end
 function C.setup_buffer(buf)
   buf = normalize_buf(buf)
 
-  v.nvim_buf_create_user_command(buf, 'Attach', C.attach_handler(buf), {
+  v.nvim_buf_create_user_command(buf, "Attach", C.attach_handler(buf), {
     nargs = 1,
-    complete = 'file',
-    desc = 'Attach a file to the current notmuch draft',
+    complete = "file",
+    desc = "Attach a file to the current notmuch draft",
     force = true,
   })
 
-  v.nvim_buf_create_user_command(buf, 'AttachRemove', C.remove_handler(buf), {
+  v.nvim_buf_create_user_command(buf, "AttachRemove", C.remove_handler(buf), {
     nargs = 1,
     complete = C.remove_completion(buf),
-    desc = 'Remove an attachment from the current notmuch draft',
+    desc = "Remove an attachment from the current notmuch draft",
     force = true,
   })
 
-  v.nvim_buf_create_user_command(buf, 'AttachList', C.list_handler(buf), {
+  v.nvim_buf_create_user_command(buf, "AttachList", C.list_handler(buf), {
     nargs = 0,
-    desc = 'List attachments for the current notmuch draft',
+    desc = "List attachments for the current notmuch draft",
     force = true,
   })
 
-  v.nvim_buf_create_user_command(buf, 'AttachOpen', C.open_handler(buf), {
+  v.nvim_buf_create_user_command(buf, "AttachOpen", C.open_handler(buf), {
     nargs = 0,
-    desc = 'Open the attachment scratch buffer for the current notmuch draft',
+    desc = "Open the attachment scratch buffer for the current notmuch draft",
     force = true,
   })
 

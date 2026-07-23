@@ -85,7 +85,7 @@
 
 local D = {}
 
-local config = require('notmuch.config')
+local config = require("notmuch.config")
 
 local function now_utc()
   return os.date("!%Y-%m-%dT%H:%M:%SZ")
@@ -99,16 +99,16 @@ local function ensure_dir(path)
   local stat = vim.uv.fs_stat(path)
 
   if stat then
-    if stat.type ~= 'directory' then
-      vim.notify('Draft path exists but is not a directory: ' .. path, vim.log.levels.ERROR)
+    if stat.type ~= "directory" then
+      vim.notify("Draft path exists but is not a directory: " .. path, vim.log.levels.ERROR)
       return false
     end
     return true
   end
 
-  local ok = vim.fn.mkdir(path, 'p', 448) -- Octal: 0700 permissions drwx------
+  local ok = vim.fn.mkdir(path, "p", 448) -- Octal: 0700 permissions drwx------
   if ok == 0 then
-    vim.notify('Failed to create draft directory: ' .. path, vim.log.levels.ERROR)
+    vim.notify("Failed to create draft directory: " .. path, vim.log.levels.ERROR)
     return false
   end
 
@@ -137,9 +137,9 @@ local function extract_draft_header(eml_path, header_name)
 end
 
 local function extract_draft_subject(eml_path)
-  local subject = extract_draft_header(eml_path, 'Subject')
+  local subject = extract_draft_header(eml_path, "Subject")
   if not subject or subject == "" then
-    return '[No subject]'
+    return "[No subject]"
   end
   return subject
 end
@@ -148,14 +148,14 @@ end
 ---
 ---@return string path
 function D.compose_dir()
-  return vim.fs.joinpath(config.options.drafts.folder, 'compose')
+  return vim.fs.joinpath(config.options.drafts.folder, "compose")
 end
 
 --- Return the root directory used for reply drafts.
 ---
 ---@return string path
 function D.replies_dir()
-  return vim.fs.joinpath(config.options.drafts.folder, 'replies')
+  return vim.fs.joinpath(config.options.drafts.folder, "replies")
 end
 
 --- Return the reply draft group directory for a message ID.
@@ -171,7 +171,7 @@ end
 ---@param message_id string Original message ID.
 ---@return string path
 function D.reply_group_metadata_path(message_id)
-  return vim.fs.joinpath(D.reply_group_dir(message_id), 'message.json')
+  return vim.fs.joinpath(D.reply_group_dir(message_id), "message.json")
 end
 
 --- Ensure the reply draft group directory and metadata file exist.
@@ -180,8 +180,8 @@ end
 ---@return string? dir Reply group directory, or nil on failure.
 function D.ensure_reply_group(message_id)
   -- Validate the input `message_id` format
-  if type(message_id) ~= 'string' or message_id == '' then
-    vim.notify('ensure_reply_group expected message id string', vim.log.levels.ERROR)
+  if type(message_id) ~= "string" or message_id == "" then
+    vim.notify("ensure_reply_group expected message id string", vim.log.levels.ERROR)
     return nil
   end
 
@@ -212,7 +212,10 @@ function D.ensure_reply_group(message_id)
     return nil
   end
   if metadata.message_id ~= message_id then
-    vim.notify('Reply draft group metadata does not match message id: ' .. metadata_path, vim.log.levels.ERROR)
+    vim.notify(
+      "Reply draft group metadata does not match message id: " .. metadata_path,
+      vim.log.levels.ERROR
+    )
     return nil
   end
 
@@ -224,7 +227,7 @@ end
 ---@param eml_path string Draft `.eml` path.
 ---@return string path Sidecar `.json` path.
 function D.sidecar_path(eml_path)
-  local path = eml_path:gsub('%.eml$', '.json')
+  local path = eml_path:gsub("%.eml$", ".json")
   return path
 end
 
@@ -235,14 +238,14 @@ end
 function D.read_metadata(path)
   local ok, lines = pcall(vim.fn.readfile, path)
   if not ok then
-    vim.notify('Failed to read draft metadata: ' .. path, vim.log.levels.ERROR)
+    vim.notify("Failed to read draft metadata: " .. path, vim.log.levels.ERROR)
     return nil
   end
 
-  local raw = table.concat(lines, '\n')
+  local raw = table.concat(lines, "\n")
   local decode_ok, metadata = pcall(vim.json.decode, raw)
   if not decode_ok then
-    vim.notify('Failed to decode draft metadata: ' .. path, vim.log.levels.ERROR)
+    vim.notify("Failed to decode draft metadata: " .. path, vim.log.levels.ERROR)
     return nil
   end
 
@@ -257,13 +260,13 @@ end
 function D.write_metadata(path, metadata)
   local ok, json = pcall(vim.json.encode, metadata)
   if not ok then
-    vim.notify('Failed to encode draft metadata: ' .. json, vim.log.levels.ERROR)
+    vim.notify("Failed to encode draft metadata: " .. json, vim.log.levels.ERROR)
     return false
   end
 
   local write_ok = vim.fn.writefile({ json }, path)
   if write_ok ~= 0 then
-    vim.notify('Failed to write draft metadata: ' .. path, vim.log.levels.ERROR)
+    vim.notify("Failed to write draft metadata: " .. path, vim.log.levels.ERROR)
     return false
   end
 
@@ -296,7 +299,7 @@ end
 ---@param attachments? notmuch.AttachmentPath[] Attachment paths.
 ---@return boolean ok
 function D.save_buffer_attachments(buf, attachments)
-  local ok, json_path = pcall(vim.api.nvim_buf_get_var, buf, 'notmuch_draft_json_path')
+  local ok, json_path = pcall(vim.api.nvim_buf_get_var, buf, "notmuch_draft_json_path")
   if not ok or not json_path then
     return true
   end
@@ -309,15 +312,15 @@ end
 ---@param lines string[] Email contents to write to the `.eml` file.
 ---@return notmuch.Draft? draft
 function D.create_compose_draft(lines)
-  if type(lines) ~= 'table' then
-    vim.notify('create_compose_draft expected lines table', vim.log.levels.ERROR)
+  if type(lines) ~= "table" then
+    vim.notify("create_compose_draft expected lines table", vim.log.levels.ERROR)
     return nil
   end
 
   for i, line in ipairs(lines) do
-    if type(line) ~= 'string' then
+    if type(line) ~= "string" then
       vim.notify(
-        string.format('create_compose_draft expected line %d to be a string', i),
+        string.format("create_compose_draft expected line %d to be a string", i),
         vim.log.levels.ERROR
       )
       return nil
@@ -333,14 +336,14 @@ function D.create_compose_draft(lines)
   local timestamp = os.date("!%Y%m%dT%H%M%SZ")
   local basename = string.format("compose-%s-%s", timestamp, random_suffix())
 
-  local eml_path = vim.fs.joinpath(dir, basename .. '.eml')
+  local eml_path = vim.fs.joinpath(dir, basename .. ".eml")
   local json_path = D.sidecar_path(eml_path)
 
   local created_at = now_utc()
 
   local metadata = {
     schema_version = 1,
-    kind = 'compose',
+    kind = "compose",
     attachments = {},
     created_at = created_at,
     updated_at = created_at,
@@ -349,7 +352,7 @@ function D.create_compose_draft(lines)
 
   local ok_eml = vim.fn.writefile(lines, eml_path)
   if ok_eml ~= 0 then
-    vim.notify('Failed to write compose draft: ' .. eml_path, vim.log.levels.ERROR)
+    vim.notify("Failed to write compose draft: " .. eml_path, vim.log.levels.ERROR)
     return nil
   end
 
@@ -359,7 +362,7 @@ function D.create_compose_draft(lines)
   end
 
   return {
-    kind = 'compose',
+    kind = "compose",
     eml_path = eml_path,
     json_path = json_path,
     metadata = metadata,
@@ -373,21 +376,24 @@ end
 ---@return notmuch.Draft? draft
 function D.create_reply_draft(message_id, lines)
   -- Validate message_id
-  if type(message_id) ~= 'string' or message_id == '' then
-    vim.notify('create_reply_draft expected message id string', vim.log.levels.ERROR)
+  if type(message_id) ~= "string" or message_id == "" then
+    vim.notify("create_reply_draft expected message id string", vim.log.levels.ERROR)
     return nil
   end
 
   -- Validate lines table
-  if type(lines) ~= 'table' then
-    vim.notify('create_reply_draft expected lines table', vim.log.levels.ERROR)
+  if type(lines) ~= "table" then
+    vim.notify("create_reply_draft expected lines table", vim.log.levels.ERROR)
     return nil
   end
 
   -- Validate lines elements
   for i, line in ipairs(lines) do
-    if type(line) ~= 'string' then
-      vim.notify(string.format('create_reply_draft expected line %d to be a string', i), vim.log.levels.ERROR)
+    if type(line) ~= "string" then
+      vim.notify(
+        string.format("create_reply_draft expected line %d to be a string", i),
+        vim.log.levels.ERROR
+      )
       return nil
     end
   end
@@ -400,12 +406,12 @@ function D.create_reply_draft(message_id, lines)
   -- Prepare metadata for the reply
   local timestamp = os.date("!%Y%m%dT%H%M%SZ")
   local basename = string.format("reply-%s-%s", timestamp, random_suffix())
-  local eml_path = vim.fs.joinpath(dir, basename .. '.eml')
+  local eml_path = vim.fs.joinpath(dir, basename .. ".eml")
   local json_path = D.sidecar_path(eml_path)
   local created_at = now_utc()
   local metadata = {
     schema_version = 1,
-    kind = 'reply',
+    kind = "reply",
     message_id = message_id,
     attachments = {},
     created_at = created_at,
@@ -416,7 +422,7 @@ function D.create_reply_draft(message_id, lines)
   -- Write `.eml` file with reply mail content
   local ok_eml = vim.fn.writefile(lines, eml_path)
   if ok_eml ~= 0 then
-    vim.notify('Failed to write reply draaft: ' .. eml_path, vim.log.levels.ERROR)
+    vim.notify("Failed to write reply draaft: " .. eml_path, vim.log.levels.ERROR)
     return nil
   end
 
@@ -426,7 +432,7 @@ function D.create_reply_draft(message_id, lines)
   end
 
   return {
-    kind = 'reply',
+    kind = "reply",
     eml_path = eml_path,
     json_path = json_path,
     metadata = metadata,
@@ -446,7 +452,7 @@ function D.load_compose_draft(eml_path)
   end
 
   return {
-    kind = 'compose',
+    kind = "compose",
     eml_path = eml_path,
     json_path = json_path,
     metadata = metadata,
@@ -460,8 +466,8 @@ end
 ---@return notmuch.Draft? draft
 function D.load_reply_draft(eml_path)
   -- Validate eml_path
-  if type(eml_path) ~= 'string' or eml_path == '' then
-    vim.notify('load_reply_draft expected eml path string', vim.log.levels.ERROR)
+  if type(eml_path) ~= "string" or eml_path == "" then
+    vim.notify("load_reply_draft expected eml path string", vim.log.levels.ERROR)
     return nil
   end
 
@@ -473,13 +479,13 @@ function D.load_reply_draft(eml_path)
   end
 
   -- Defensively check against wrong `kind`
-  if metadata.kind ~= 'reply' then
-    vim.notify('Draft is not a reply draft: ' .. eml_path, vim.log.levels.ERROR)
+  if metadata.kind ~= "reply" then
+    vim.notify("Draft is not a reply draft: " .. eml_path, vim.log.levels.ERROR)
     return nil
   end
 
   return {
-    kind = 'reply',
+    kind = "reply",
     eml_path = eml_path,
     json_path = json_path,
     metadata = metadata,
@@ -502,22 +508,24 @@ function D.list_compose_drafts()
     return nil
   end
 
-  local paths = vim.fn.globpath(dir, '*.eml', false, true)
+  local paths = vim.fn.globpath(dir, "*.eml", false, true)
   local drafts = {}
 
   for _, eml_path in ipairs(paths) do
     local draft = D.load_compose_draft(eml_path)
 
-    if draft
-      and draft.kind == 'compose'
-      and (config.options.drafts.show_sent_drafts or is_unsent(draft)) then
+    if
+      draft
+      and draft.kind == "compose"
+      and (config.options.drafts.show_sent_drafts or is_unsent(draft))
+    then
       table.insert(drafts, draft)
     end
   end
 
-  table.sort(drafts, function (a, b)
-    local a_time = a.metadata.updated_at or a.metadata.created_at or ''
-    local b_time = b.metadata.updated_at or b.metadata.created_at or ''
+  table.sort(drafts, function(a, b)
+    local a_time = a.metadata.updated_at or a.metadata.created_at or ""
+    local b_time = b.metadata.updated_at or b.metadata.created_at or ""
 
     return a_time > b_time
   end)
@@ -533,8 +541,8 @@ end
 ---@return notmuch.Draft[]? drafts
 function D.list_reply_drafts(message_id)
   -- Validate message_id input
-  if type(message_id) ~= 'string' or message_id == '' then
-    vim.notify('list_reply_drafts expected message id string', vim.log.levels.ERROR)
+  if type(message_id) ~= "string" or message_id == "" then
+    vim.notify("list_reply_drafts expected message id string", vim.log.levels.ERROR)
     return nil
   end
 
@@ -546,28 +554,30 @@ function D.list_reply_drafts(message_id)
   end
 
   -- Validate reply group dir is a directory if exists
-  if stat.type ~= 'directory' then
-    vim.notify('Reply drafts path is not a directory: ' .. dir, vim.log.levels.ERROR)
+  if stat.type ~= "directory" then
+    vim.notify("Reply drafts path is not a directory: " .. dir, vim.log.levels.ERROR)
     return nil
   end
 
   -- Get all `.eml` files in this reply group
-  local paths = vim.fn.globpath(dir, '*.eml', false, true)
+  local paths = vim.fn.globpath(dir, "*.eml", false, true)
   local drafts = {}
   for _, eml_path in ipairs(paths) do
     local draft = D.load_reply_draft(eml_path)
-    if draft
-      and draft.kind == 'reply'
+    if
+      draft
+      and draft.kind == "reply"
       and draft.metadata.message_id == message_id
-      and (config.options.drafts.show_sent_drafts or is_unsent(draft)) then
+      and (config.options.drafts.show_sent_drafts or is_unsent(draft))
+    then
       table.insert(drafts, draft)
     end
   end
 
   -- Sort by updated/created timestamp, descending
   table.sort(drafts, function(a, b)
-    local a_time = a.metadata.updated_at or a.metadata.created_at or ''
-    local b_time = b.metadata.updated_at or b.metadata.created_at or ''
+    local a_time = a.metadata.updated_at or a.metadata.created_at or ""
+    local b_time = b.metadata.updated_at or b.metadata.created_at or ""
 
     return a_time > b_time
   end)
@@ -588,24 +598,28 @@ function D.list_all_reply_drafts()
     return {}
   end
 
-  if stat.type ~= 'directory' then
-    vim.notify('Reply drafts path is not a directory: ' .. dir, vim.log.levels.ERROR)
+  if stat.type ~= "directory" then
+    vim.notify("Reply drafts path is not a directory: " .. dir, vim.log.levels.ERROR)
     return nil
   end
 
-  local paths = vim.fn.globpath(dir, '*/*.eml', false, true)
+  local paths = vim.fn.globpath(dir, "*/*.eml", false, true)
   local drafts = {}
 
   for _, eml_path in ipairs(paths) do
     local draft = D.load_reply_draft(eml_path)
-    if draft and draft.kind == 'reply' and (config.options.drafts.show_sent_drafts or is_unsent(draft)) then
+    if
+      draft
+      and draft.kind == "reply"
+      and (config.options.drafts.show_sent_drafts or is_unsent(draft))
+    then
       table.insert(drafts, draft)
     end
   end
 
   table.sort(drafts, function(a, b)
-    local a_time = a.metadata.updated_at or a.metadata.created_at or ''
-    local b_time = b.metadata.updated_at or b.metadata.created_at or ''
+    local a_time = a.metadata.updated_at or a.metadata.created_at or ""
+    local b_time = b.metadata.updated_at or b.metadata.created_at or ""
     return a_time > b_time
   end)
 
@@ -627,8 +641,8 @@ function D.list_all_drafts()
   end
 
   table.sort(drafts, function(a, b)
-    local a_time = a.metadata.updated_at or a.metadata.created_at or ''
-    local b_time = b.metadata.updated_at or b.metadata.created_at or ''
+    local a_time = a.metadata.updated_at or a.metadata.created_at or ""
+    local b_time = b.metadata.updated_at or b.metadata.created_at or ""
     return a_time > b_time
   end)
 
@@ -660,26 +674,26 @@ function D.delete_draft(draft_or_eml_path)
   local eml_path
   local json_path
 
-  if type(draft_or_eml_path) == 'table' then
+  if type(draft_or_eml_path) == "table" then
     eml_path = draft_or_eml_path.eml_path
     if eml_path then
       json_path = draft_or_eml_path.json_path or D.sidecar_path(eml_path)
     end
-  elseif type(draft_or_eml_path) == 'string' then
+  elseif type(draft_or_eml_path) == "string" then
     eml_path = draft_or_eml_path
     json_path = D.sidecar_path(eml_path)
   else
-    vim.notify('delete_draft expected draft object or eml path', vim.log.levels.ERROR)
+    vim.notify("delete_draft expected draft object or eml path", vim.log.levels.ERROR)
     return false
   end
 
-  if not eml_path or eml_path == '' then
-    vim.notify('delete_draft missing eml path', vim.log.levels.ERROR)
+  if not eml_path or eml_path == "" then
+    vim.notify("delete_draft missing eml path", vim.log.levels.ERROR)
     return false
   end
 
-  if not eml_path:match('%.eml$') then
-    vim.notify('delete_draft expected .eml path: ' .. eml_path, vim.log.levels.ERROR)
+  if not eml_path:match("%.eml$") then
+    vim.notify("delete_draft expected .eml path: " .. eml_path, vim.log.levels.ERROR)
     return false
   end
 
@@ -687,14 +701,14 @@ function D.delete_draft(draft_or_eml_path)
 
   if vim.uv.fs_stat(eml_path) then
     if vim.fn.delete(eml_path) ~= 0 then
-      vim.notify('Failed to delete draft file: ' .. eml_path, vim.log.levels.ERROR)
+      vim.notify("Failed to delete draft file: " .. eml_path, vim.log.levels.ERROR)
       ok = false
     end
   end
 
   if json_path and vim.uv.fs_stat(json_path) then
     if vim.fn.delete(json_path) ~= 0 then
-      vim.notify('Failed to delete draft metadata: ' .. json_path, vim.log.levels.ERROR)
+      vim.notify("Failed to delete draft metadata: " .. json_path, vim.log.levels.ERROR)
       ok = false
     end
   end

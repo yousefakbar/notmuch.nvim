@@ -15,7 +15,9 @@ local function with_draft_root(fn)
 
   config.options.drafts = old_drafts
   pcall(vim.cmd, "silent! %bwipeout!")
-  if not ok then error(err, 0) end
+  if not ok then
+    error(err, 0)
+  end
 end
 
 return {
@@ -28,10 +30,13 @@ return {
         local buf = vim.api.nvim_create_buf(false, true)
 
         H.same({}, state.get(buf))
-        H.eq(true, state.set(buf, { "  " .. file .. "  ", "", file, 42 }, {
-          persist = false,
-          refresh_scratch = false,
-        }))
+        H.eq(
+          true,
+          state.set(buf, { "  " .. file .. "  ", "", file, 42 }, {
+            persist = false,
+            refresh_scratch = false,
+          })
+        )
 
         local expected = { vim.fn.fnamemodify(file, ":p") }
         H.same(expected, state.get(buf))
@@ -65,7 +70,8 @@ return {
         H.eq(false, dup_ok)
         H.contains(dup_err, "Already attached")
 
-        local missing_ok, missing_err = state.add(buf, dir .. "/missing.txt", { refresh_scratch = false })
+        local missing_ok, missing_err =
+          state.add(buf, dir .. "/missing.txt", { refresh_scratch = false })
         H.eq(false, missing_ok)
         H.contains(missing_err, "No such file or directory")
 

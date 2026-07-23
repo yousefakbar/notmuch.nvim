@@ -34,5 +34,7 @@ notmuch.setup({
 -- Avoid blocking headless runs if a spec accidentally reaches an interactive picker.
 -- Specs that assert picker behavior should replace this stub locally.
 vim.ui.select = function(_, _, on_choice)
-  if on_choice then on_choice(nil) end
+  if on_choice then
+    on_choice(nil)
+  end
 end
