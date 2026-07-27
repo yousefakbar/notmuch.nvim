@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added StyLua formatter configuration, Makefile format/lint targets, and a GitHub Actions formatting check.
+- Added configurable `send.send_mode` with `terminal` and `background` modes for sending mail through `msmtp`.
 
 ### Changed
 

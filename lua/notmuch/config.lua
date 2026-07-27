@@ -54,7 +54,7 @@ C.defaults = function()
     logfile = nil,
     send = {
       -- terminal: Real PTY terminal with stdin support for password input
-      -- background: Silent sync in background, notifications only
+      -- background: Run silently in background, notifications only
       send_mode = "terminal", -- "terminal" | "background"
     },
     sync = {
