@@ -20,6 +20,7 @@ local function with_send_env(fn)
   local old_path = vim.env.PATH
   local old_get_current_message_id = thread.get_current_message_id
   local old_logfile = config.options.logfile
+  local old_send = vim.deepcopy(config.options.send)
   local old_drafts = vim.deepcopy(config.options.drafts)
   local old_select = vim.ui.select
   local old_system = vim.system
@@ -37,9 +38,10 @@ local function with_send_env(fn)
     show_sent_drafts = false,
     auto_open_attachment_window = false,
   }
-  vim.ui.select = function(_, _, on_choice)
-    on_choice(nil)
-  end
+  config.options.send = {
+    send_mode = "terminal",
+  }
+  vim.ui.select = function(_, _, on_choice) on_choice(nil) end
 
   local ok, err = pcall(fn, state, send, config, thread)
 
@@ -50,6 +52,7 @@ local function with_send_env(fn)
   vim.env.PATH = old_path
   thread.get_current_message_id = old_get_current_message_id
   config.options.logfile = old_logfile
+  config.options.send = old_send
   config.options.drafts = old_drafts
   vim.ui.select = old_select
   vim.system = old_system
@@ -475,6 +478,94 @@ return {
         if not ok then
           error(err, 0)
         end
+      end)
+    end,
+  },
+  {
+    name = "send.sendmail runs msmtp in background mode",
+    run = function()
+      with_send_env(function(state, send, config)
+        local content = "From: a@example.com\n\nbody\n"
+        local file = H.write_file(state.dir .. "/message.eml", content)
+        local logfile = state.dir .. "/smtp log"
+        config.options.send.send_mode = "background"
+        config.options.logfile = logfile
+
+        local old_system = vim.system
+        local old_notify = vim.notify
+        local command
+        local system_opts
+        local success = false
+        local notes = {}
+
+        vim.notify = function(msg, level)
+          table.insert(notes, { msg = msg, level = level })
+        end
+
+        vim.system = function(args, opts, callback)
+          command = args
+          system_opts = opts
+          callback({ code = 0, stdout = "", stderr = "" })
+          return {}
+        end
+
+        local ok, err = pcall(function()
+          H.eq(true, send.sendmail(file, {
+            on_success = function() success = true end,
+          }))
+
+          H.same({
+            "msmtp",
+            "-t",
+            "--read-envelope-from",
+            "--logfile=" .. logfile,
+          }, command)
+          H.eq(content, system_opts.stdin)
+          H.eq(true, system_opts.text)
+
+          H.wait_until(function() return success end)
+          H.contains(notes[#notes].msg, "Email sent successfully")
+        end)
+
+        vim.system = old_system
+        vim.notify = old_notify
+        if not ok then error(err, 0) end
+      end)
+    end,
+  },
+  {
+    name = "send.sendmail reports background failure and invokes callback",
+    run = function()
+      with_send_env(function(state, send, config)
+        local file = H.write_file(state.dir .. "/message.eml", "From: a@example.com\n\nbody\n")
+        config.options.send.send_mode = "background"
+
+        local old_system = vim.system
+        local old_notify = vim.notify
+        local failure_code
+        local note
+
+        vim.notify = function(msg, level) note = { msg = msg, level = level } end
+        vim.system = function(_, _, callback)
+          callback({ code = 7, stdout = "", stderr = "authentication failed" })
+          return {}
+        end
+
+        local ok, err = pcall(function()
+          H.eq(true, send.sendmail(file, {
+            on_failure = function(code) failure_code = code end,
+          }))
+
+          H.wait_until(function() return failure_code ~= nil end)
+          H.eq(7, failure_code)
+          H.eq(vim.log.levels.ERROR, note.level)
+          H.contains(note.msg, "exit code: 7")
+          H.contains(note.msg, "authentication failed")
+        end)
+
+        vim.system = old_system
+        vim.notify = old_notify
+        if not ok then error(err, 0) end
       end)
     end,
   },

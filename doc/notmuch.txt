@@ -320,8 +320,8 @@ option will be listed with its default value.
     `false`
 
 *send.send_mode*
-  Controls the dispatching mechanism for the `sendmail` command while sending
-  newly composed emails. This option accepts the following values:
+  Controls how emails are sent through `msmtp`. This option accepts the
+  following values:
 
   Default value:
     `"terminal"`
@@ -335,8 +335,8 @@ option will be listed with its default value.
   - `"background"`:
     Runs the `sendmail` operation completely in the background with no visible
     output. Only notifications are shown when the send command starts and
-    completes. This mode is ideal for automated syncing where you don't need
-    to see the process details or enter any passwords.
+    completes. This mode is ideal when you do not need to see process details
+    or enter interactive credentials.
 
 *sync.sync_mode*
   Controls how the mail synchronization is displayed and managed. This option
