@@ -47,6 +47,32 @@ local function default_title(result, attachment)
   return 'Attachment preview'
 end
 
+local function attachment_filename(attachment)
+  local filename = attachment and attachment.part and attachment.part.filename
+  if filename and filename ~= '' then
+    return filename
+  end
+end
+
+local function detect_text_filetype(result, attachment, buf)
+  if result.filetype ~= 'text' or result.rule ~= 'text' then
+    return result.filetype
+  end
+
+  local args = { buf = buf }
+  local filename = attachment_filename(attachment)
+  if filename then
+    args.filename = filename
+  end
+
+  local ft, on_detect = vim.filetype.match(args)
+  if ft and on_detect then
+    pcall(on_detect, buf)
+  end
+
+  return ft or result.filetype
+end
+
 -- -----------------------------------------------------------------------------
 -- PUBLIC FUNCTIONS
 -- -----------------------------------------------------------------------------
@@ -70,8 +96,9 @@ function R.render(result, attachment, opts)
   local lines = result_lines(result)
   v.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
-  if result.filetype and result.filetype ~= '' then
-    v.nvim_set_option_value('filetype', result.filetype, { buf = buf })
+  local filetype = detect_text_filetype(result, attachment, buf)
+  if filetype and filetype ~= '' then
+    v.nvim_set_option_value('filetype', filetype, { buf = buf })
   end
 
   local width = resolve_dimension(window.width, vim.o.columns)

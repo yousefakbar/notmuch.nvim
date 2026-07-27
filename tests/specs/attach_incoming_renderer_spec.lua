@@ -1,13 +1,15 @@
 local H = dofile('tests/helpers.lua')
 
-local function attachment()
+local function attachment(opts)
+  opts = opts or {}
+
   return {
-    path = '/tmp/doc.md',
+    path = opts.path or '/tmp/doc.md',
     part = {
       id = 1,
-      content_type = 'text/markdown',
-      filename = 'doc.md',
-      ext = 'md',
+      content_type = opts.content_type or 'text/markdown',
+      filename = opts.filename or 'doc.md',
+      ext = opts.ext or 'md',
     },
     message = { id = 'msg1' },
   }
@@ -63,6 +65,51 @@ return {
       H.eq(math.floor(vim.o.columns * 0.5), cfg.width)
       H.eq(math.floor(vim.o.lines * 0.5), cfg.height)
       H.eq('table', type(cfg.border))
+
+      vim.api.nvim_win_close(rendered.win, true)
+    end,
+  },
+  {
+    name = 'attach.incoming.renderer.render detects text view filetype with vim.filetype.match',
+    run = function()
+      local renderer = require('notmuch.attach.incoming.renderer')
+      local rendered = renderer.render({
+        content = 'print("hello")',
+        filetype = 'text',
+        rule = 'text',
+      }, attachment({ filename = 'script.py', ext = 'py', content_type = 'text/x-python' }))
+
+      H.eq('python', vim.api.nvim_get_option_value('filetype', { buf = rendered.buf }))
+
+      vim.api.nvim_win_close(rendered.win, true)
+    end,
+  },
+  {
+    name = 'attach.incoming.renderer.render detects text view filetype from contents',
+    run = function()
+      local renderer = require('notmuch.attach.incoming.renderer')
+      local rendered = renderer.render({
+        content = '#!/usr/bin/env bash\necho hello',
+        filetype = 'text',
+        rule = 'text',
+      }, attachment({ filename = '', ext = '', content_type = 'text/plain' }))
+
+      H.eq('sh', vim.api.nvim_get_option_value('filetype', { buf = rendered.buf }))
+
+      vim.api.nvim_win_close(rendered.win, true)
+    end,
+  },
+  {
+    name = 'attach.incoming.renderer.render keeps converted non-text-rule previews as text',
+    run = function()
+      local renderer = require('notmuch.attach.incoming.renderer')
+      local rendered = renderer.render({
+        content = 'Rendered HTML text',
+        filetype = 'text',
+        rule = 'html',
+      }, attachment({ filename = 'page.html', ext = 'html', content_type = 'text/html' }))
+
+      H.eq('text', vim.api.nvim_get_option_value('filetype', { buf = rendered.buf }))
 
       vim.api.nvim_win_close(rendered.win, true)
     end,
