@@ -4,7 +4,7 @@ local attach = require("notmuch.attach")
 local config = require("notmuch.config")
 local m = require("notmuch.mime")
 local thread = require("notmuch.thread")
-local u = require('notmuch.util')
+local u = require("notmuch.util")
 local v = vim.api
 
 -- Prompt the user to confirm sending the current draft.
@@ -123,12 +123,10 @@ end
 
 local sendmail_terminal = function(filename, opts, cmd_parts)
   -- Construct `msmtp` command
-  local msmtp_cmd = table.concat(cmd_parts, ' ')
-    .. ' <'
-    .. vim.fn.shellescape(filename)
+  local msmtp_cmd = table.concat(cmd_parts, " ") .. " <" .. vim.fn.shellescape(filename)
 
   -- Create terminal at the bottom
-  vim.cmd('botright 15split | terminal')
+  vim.cmd("botright 15split | terminal")
 
   -- Capture terminal buffer ID and job ID
   local term_buf = v.nvim_get_current_buf()
@@ -136,7 +134,7 @@ local sendmail_terminal = function(filename, opts, cmd_parts)
 
   -- If failed to start terminal, report failure and exit
   if not term_job then
-    vim.notify('Failed to start terminal for msmtp', vim.log.levels.ERROR)
+    vim.notify("Failed to start terminal for msmtp", vim.log.levels.ERROR)
 
     if opts.on_failure then
       opts.on_failure(-1)
@@ -146,12 +144,12 @@ local sendmail_terminal = function(filename, opts, cmd_parts)
   end
 
   -- Create an augroup for autocmd to register only for this buffer
-  local aug = v.nvim_create_augroup('NotmuchSendmail_' .. term_buf, {
+  local aug = v.nvim_create_augroup("NotmuchSendmail_" .. term_buf, {
     clear = true,
   })
 
   -- Create autocmd for terminal closure: cleanup augroup and report pass/fail
-  v.nvim_create_autocmd('TermClose', {
+  v.nvim_create_autocmd("TermClose", {
     group = aug,
     pattern = "*",
     callback = function(ev)
@@ -167,16 +165,14 @@ local sendmail_terminal = function(filename, opts, cmd_parts)
 
       if exit_code == 0 then
         vim.defer_fn(function()
-          vim.notify('✅ Email sent successfully', vim.log.levels.INFO)
+          vim.notify("✅ Email sent successfully", vim.log.levels.INFO)
         end, 500)
 
         if opts.on_success then
           opts.on_success()
         end
       else
-        vim.notify('Failed to send email (exit code: ' .. exit_code .. ')',
-          vim.log.levels.ERROR
-        )
+        vim.notify("Failed to send email (exit code: " .. exit_code .. ")", vim.log.levels.ERROR)
 
         if opts.on_failure then
           opts.on_failure(exit_code)
@@ -186,11 +182,11 @@ local sendmail_terminal = function(filename, opts, cmd_parts)
   })
 
   -- Dispatch msmtp command and close terminal right after
-  local bytes_written = vim.fn.chansend(term_job, msmtp_cmd .. ' ; exit\n')
+  local bytes_written = vim.fn.chansend(term_job, msmtp_cmd .. " ; exit\n")
   if bytes_written == 0 then
     pcall(v.nvim_del_augroup_by_id, aug)
 
-    vim.notify('Failed to send msmtp command', vim.log.levels.ERROR)
+    vim.notify("Failed to send msmtp command", vim.log.levels.ERROR)
 
     if opts.on_failure then
       opts.on_failure(-1)
@@ -199,7 +195,7 @@ local sendmail_terminal = function(filename, opts, cmd_parts)
     return false
   end
 
-  vim.cmd('startinsert')
+  vim.cmd("startinsert")
   return true
 end
 
@@ -209,10 +205,7 @@ local sendmail_background = function(filename, opts, cmd_parts)
 
   -- Fail fast on failure to read email content
   if not content then
-    vim.notify(
-      'Failed to read email file: ' .. filename,
-      vim.log.levels.ERROR
-    )
+    vim.notify("Failed to read email file: " .. filename, vim.log.levels.ERROR)
 
     if opts.on_failure then
       opts.on_failure(-1)
@@ -229,19 +222,19 @@ local sendmail_background = function(filename, opts, cmd_parts)
     vim.schedule(function()
       if result.code == 0 then
         -- On success, print and run callback
-        vim.notify('✅ Email sent successfully', vim.log.levels.INFO)
+        vim.notify("✅ Email sent successfully", vim.log.levels.INFO)
 
         if opts.on_success then
           opts.on_success()
         end
       else
         -- On failure, capture stderr + print error log + callback
-        local stderr = result.stderr or ''
+        local stderr = result.stderr or ""
 
         vim.notify(
-          ('Failed to send email (exit code: %d)%s'):format(
+          ("Failed to send email (exit code: %d)%s"):format(
             result.code,
-            stderr ~= '' and (':\n' .. stderr) or ''
+            stderr ~= "" and (":\n" .. stderr) or ""
           ),
           vim.log.levels.ERROR
         )
@@ -272,7 +265,7 @@ s.sendmail = function(filename, opts)
   opts = opts or {}
 
   if not vim.uv.fs_stat(filename) then
-    vim.notify('❌ Email file not found: ' .. filename, vim.log.levels.ERROR)
+    vim.notify("❌ Email file not found: " .. filename, vim.log.levels.ERROR)
     if opts.on_failure then
       opts.on_failure(-1)
     end
@@ -281,32 +274,27 @@ s.sendmail = function(filename, opts)
 
   -- Build msmtp command
   local argv = {
-    'msmtp',
-    '-t',
-    '--read-envelope-from'
+    "msmtp",
+    "-t",
+    "--read-envelope-from",
   }
   local shell_parts = {
-    'msmtp',
-    '-t',
-    '--read-envelope-from'
+    "msmtp",
+    "-t",
+    "--read-envelope-from",
   }
 
   if config.options.logfile then
     -- argv form: no shellescape
-    table.insert(argv, '--logfile=' .. config.options.logfile)
+    table.insert(argv, "--logfile=" .. config.options.logfile)
 
     -- shell form: escape only the path portion
-    table.insert(
-      shell_parts,
-      '--logfile=' .. vim.fn.shellescape(config.options.logfile)
-    )
+    table.insert(shell_parts, "--logfile=" .. vim.fn.shellescape(config.options.logfile))
   end
 
-  vim.notify('📤 Sending email via msmtp...', vim.log.levels.INFO)
+  vim.notify("📤 Sending email via msmtp...", vim.log.levels.INFO)
 
-  local send_mode = config.options.send
-    and config.options.send.send_mode
-    or "terminal"
+  local send_mode = config.options.send and config.options.send.send_mode or "terminal"
 
   if send_mode == "terminal" then
     return sendmail_terminal(filename, opts, shell_parts)
@@ -314,10 +302,7 @@ s.sendmail = function(filename, opts)
     return sendmail_background(filename, opts, argv)
   end
 
-  vim.notify(
-    'Invalid send.send_mode: ' .. tostring(send_mode),
-    vim.log.levels.ERROR
-  )
+  vim.notify("Invalid send.send_mode: " .. tostring(send_mode), vim.log.levels.ERROR)
 
   if opts.on_failure then
     opts.on_failure(-1)

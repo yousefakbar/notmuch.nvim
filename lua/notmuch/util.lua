@@ -231,7 +231,9 @@ end
 ---@return string? content file contents
 function u.loadfile(path)
   local fd = vim.uv.fs_open(path, "r", 438)
-  if not fd then return end
+  if not fd then
+    return
+  end
   local stat = vim.uv.fs_fstat(fd)
   local content = stat and vim.uv.fs_read(fd, stat.size, 0) or nil
   vim.uv.fs_close(fd)

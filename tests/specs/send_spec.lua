@@ -41,7 +41,9 @@ local function with_send_env(fn)
   config.options.send = {
     send_mode = "terminal",
   }
-  vim.ui.select = function(_, _, on_choice) on_choice(nil) end
+  vim.ui.select = function(_, _, on_choice)
+    on_choice(nil)
+  end
 
   local ok, err = pcall(fn, state, send, config, thread)
 
@@ -510,9 +512,14 @@ return {
         end
 
         local ok, err = pcall(function()
-          H.eq(true, send.sendmail(file, {
-            on_success = function() success = true end,
-          }))
+          H.eq(
+            true,
+            send.sendmail(file, {
+              on_success = function()
+                success = true
+              end,
+            })
+          )
 
           H.same({
             "msmtp",
@@ -523,13 +530,17 @@ return {
           H.eq(content, system_opts.stdin)
           H.eq(true, system_opts.text)
 
-          H.wait_until(function() return success end)
+          H.wait_until(function()
+            return success
+          end)
           H.contains(notes[#notes].msg, "Email sent successfully")
         end)
 
         vim.system = old_system
         vim.notify = old_notify
-        if not ok then error(err, 0) end
+        if not ok then
+          error(err, 0)
+        end
       end)
     end,
   },
@@ -545,18 +556,27 @@ return {
         local failure_code
         local note
 
-        vim.notify = function(msg, level) note = { msg = msg, level = level } end
+        vim.notify = function(msg, level)
+          note = { msg = msg, level = level }
+        end
         vim.system = function(_, _, callback)
           callback({ code = 7, stdout = "", stderr = "authentication failed" })
           return {}
         end
 
         local ok, err = pcall(function()
-          H.eq(true, send.sendmail(file, {
-            on_failure = function(code) failure_code = code end,
-          }))
+          H.eq(
+            true,
+            send.sendmail(file, {
+              on_failure = function(code)
+                failure_code = code
+              end,
+            })
+          )
 
-          H.wait_until(function() return failure_code ~= nil end)
+          H.wait_until(function()
+            return failure_code ~= nil
+          end)
           H.eq(7, failure_code)
           H.eq(vim.log.levels.ERROR, note.level)
           H.contains(note.msg, "exit code: 7")
@@ -565,7 +585,9 @@ return {
 
         vim.system = old_system
         vim.notify = old_notify
-        if not ok then error(err, 0) end
+        if not ok then
+          error(err, 0)
+        end
       end)
     end,
   },
