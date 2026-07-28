@@ -224,17 +224,25 @@ return {
 
         vim.api.nvim_win_set_cursor(0, { 4, 0 })
         attach.open_attachment_part()
-        H.ok(opened and opened:find("incoming%-cache", 1, false), "expected opener to receive cached path")
+        H.ok(
+          opened and opened:find("incoming%-cache", 1, false),
+          "expected opener to receive cached path"
+        )
 
         vim.api.nvim_win_set_cursor(0, { 4, 0 })
         attach.view_attachment_part()
-        H.ok(viewed and viewed:find("incoming%-cache", 1, false), "expected viewer to receive cached path")
+        H.ok(
+          viewed and viewed:find("incoming%-cache", 1, false),
+          "expected viewer to receive cached path"
+        )
         H.contains(H.current_lines(), "stub viewed attachment")
         vim.cmd("close")
       end)
 
       config.options.attach.incoming = old_incoming
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {

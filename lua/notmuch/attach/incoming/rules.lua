@@ -30,19 +30,19 @@ local R = {}
 -- -----------------------------------------------------------------------------
 
 local function field_value(att, key)
-  if key == 'content_type' then
+  if key == "content_type" then
     return att.part and att.part.content_type
-  elseif key == 'ext' then
+  elseif key == "ext" then
     return att.part and att.part.ext
-  elseif key == 'filename' then
+  elseif key == "filename" then
     return att.part and att.part.filename
-  elseif key == 'disposition' then
+  elseif key == "disposition" then
     return att.part and att.part.disposition
-  elseif key == 'id' then
+  elseif key == "id" then
     return att.part and att.part.id
-  elseif key == 'size' then
+  elseif key == "size" then
     return att.part and att.part.size
-  elseif key == 'message_id' then
+  elseif key == "message_id" then
     return att.message and att.message.id
   end
 end
@@ -52,9 +52,9 @@ local function value_matches(expected, actual, key)
     return true
   end
 
-  if key == 'content_type' and type(expected) == 'string' and expected:match('/%*$') then
-    local prefix = expected:gsub('/%*$', '/')
-    return type(actual) == 'string' and vim.startswith(actual, prefix)
+  if key == "content_type" and type(expected) == "string" and expected:match("/%*$") then
+    local prefix = expected:gsub("/%*$", "/")
+    return type(actual) == "string" and vim.startswith(actual, prefix)
   end
 
   return false
@@ -100,21 +100,21 @@ end
 ---@param attachment NotmuchIncomingAttachment Incoming attachment object.
 ---@return boolean matches True when the rule matches the attachment.
 function R.matches(rule, attachment)
-  if type(rule) ~= 'table' then
+  if type(rule) ~= "table" then
     return false
   end
 
   local matcher = rule.match
 
-  if matcher == '*' then
+  if matcher == "*" then
     return true
   end
 
-  if type(matcher) == 'function' then
+  if type(matcher) == "function" then
     return matcher(attachment) and true or false
   end
 
-  if type(matcher) == 'table' then
+  if type(matcher) == "table" then
     return table_matches(matcher, attachment)
   end
 
@@ -189,14 +189,14 @@ end
 function R.expand_command(command, attachment)
   local argv
 
-  if type(command) == 'function' then
+  if type(command) == "function" then
     argv = command(attachment)
-  elseif type(command) == 'table' then
+  elseif type(command) == "table" then
     argv = {}
     for _, arg in ipairs(command) do
-      if arg == '$path' then
+      if arg == "$path" then
         if not attachment or not attachment.path then
-          return nil, 'cannot expand $path: attachment.path is nil'
+          return nil, "cannot expand $path: attachment.path is nil"
         end
         table.insert(argv, attachment.path)
       else
@@ -204,11 +204,11 @@ function R.expand_command(command, attachment)
       end
     end
   else
-    return nil, 'command must be a table or function'
+    return nil, "command must be a table or function"
   end
 
-  if type(argv) ~= 'table' or #argv == 0 then
-    return nil, 'expanded command is empty'
+  if type(argv) ~= "table" or #argv == 0 then
+    return nil, "expanded command is empty"
   end
 
   return argv, nil

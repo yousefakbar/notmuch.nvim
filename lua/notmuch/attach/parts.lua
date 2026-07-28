@@ -335,8 +335,8 @@ function P.open_attachment_part()
     return nil
   end
 
-  local id = string.match(v.nvim_buf_get_name(0), 'id:%C+')
-  local ok = require('notmuch.attach.incoming').open_part(part, id)
+  local id = string.match(v.nvim_buf_get_name(0), "id:%C+")
+  local ok = require("notmuch.attach.incoming").open_part(part, id)
   return ok or nil
 end
 
@@ -353,8 +353,8 @@ function P.view_attachment_part()
     return nil
   end
 
-  local id = string.match(v.nvim_buf_get_name(0), 'id:%C+')
-  local rendered = require('notmuch.attach.incoming').view_part(part, id)
+  local id = string.match(v.nvim_buf_get_name(0), "id:%C+")
+  local rendered = require("notmuch.attach.incoming").view_part(part, id)
   return rendered
 end
 

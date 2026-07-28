@@ -75,7 +75,7 @@ C.defaults = function()
     },
     attach = {
       incoming = {
-        cache_dir = vim.fs.joinpath(vim.fn.stdpath('cache'), 'notmuch.nvim', 'attachments'),
+        cache_dir = vim.fs.joinpath(vim.fn.stdpath("cache"), "notmuch.nvim", "attachments"),
         open = {
           rules = {
             prepend = {},
@@ -92,10 +92,10 @@ C.defaults = function()
             disable = {},
           },
           window = {
-            type = 'float',
+            type = "float",
             width = 0.8,
             height = 0.8,
-            border = 'rounded',
+            border = "rounded",
           },
         },
       },
@@ -110,7 +110,7 @@ end
 
 local function normalize_attachments_config(options)
   local attachments = options.attachments
-  if type(attachments) ~= 'table' then
+  if type(attachments) ~= "table" then
     return
   end
 
@@ -132,7 +132,7 @@ local function normalize_attachments_config(options)
       vim.list_extend(incoming.open.rules.prepend, attachments.open)
     else
       vim.notify(
-        'notmuch.nvim: attachments.open must be a list of incoming attachment open rules',
+        "notmuch.nvim: attachments.open must be a list of incoming attachment open rules",
         vim.log.levels.WARN
       )
     end
@@ -147,7 +147,7 @@ local function normalize_attachments_config(options)
       vim.list_extend(incoming.view.rules.prepend, attachments.view)
     else
       vim.notify(
-        'notmuch.nvim: attachments.view must be a list of incoming attachment view rules',
+        "notmuch.nvim: attachments.view must be a list of incoming attachment view rules",
         vim.log.levels.WARN
       )
     end
@@ -155,11 +155,8 @@ local function normalize_attachments_config(options)
 
   if attachments.window then
     incoming.view = incoming.view or {}
-    incoming.view.window = vim.tbl_deep_extend(
-      'force',
-      incoming.view.window or {},
-      attachments.window
-    )
+    incoming.view.window =
+      vim.tbl_deep_extend("force", incoming.view.window or {}, attachments.window)
   end
 end
 

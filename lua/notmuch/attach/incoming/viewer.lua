@@ -1,7 +1,7 @@
 local V = {}
 
-local defaults = require('notmuch.attach.incoming.defaults')
-local rules = require('notmuch.attach.incoming.rules')
+local defaults = require("notmuch.attach.incoming.defaults")
+local rules = require("notmuch.attach.incoming.rules")
 
 ---@class NotmuchIncomingViewResult
 ---@field content string Text content to render.
@@ -16,51 +16,53 @@ local rules = require('notmuch.attach.incoming.rules')
 
 local function default_title(att)
   local filename = att.part and att.part.filename
-  if filename and filename ~= '' then
+  if filename and filename ~= "" then
     return filename
   end
 
   local part_id = att.part and att.part.id
   if part_id then
-    return 'part ' .. tostring(part_id)
+    return "part " .. tostring(part_id)
   end
 
-  return 'attachment'
+  return "attachment"
 end
 
 local function normalize_result(value, rule, attachment, source)
-  if type(value) == 'table' then
+  if type(value) == "table" then
     return {
-      content = value.content or '',
-      filetype = value.filetype or rule.filetype or 'text',
+      content = value.content or "",
+      filetype = value.filetype or rule.filetype or "text",
       title = value.title or default_title(attachment),
       rule = value.rule or rule.name,
       source = value.source or source,
-    }, nil
+    },
+      nil
   end
 
-  if type(value) == 'string' then
+  if type(value) == "string" then
     return {
       content = value,
-      filetype = rule.filetype or 'text',
+      filetype = rule.filetype or "text",
       title = default_title(attachment),
       rule = rule.name,
       source = source,
-    }, nil
+    },
+      nil
   end
 
-  return nil, 'view result must be a table or string'
+  return nil, "view result must be a table or string"
 end
 
 local function fallback_content(rule, attachment, err)
   local fallback = rule.fallback
 
-  if type(fallback) == 'function' then
+  if type(fallback) == "function" then
     local ok, value = pcall(fallback, attachment)
-    if ok and value and value ~= '' then
+    if ok and value and value ~= "" then
       return value
     end
-  elseif type(fallback) == 'string' and fallback ~= '' then
+  elseif type(fallback) == "string" and fallback ~= "" then
     return fallback
   end
 
@@ -69,26 +71,27 @@ end
 
 local function fallback_result(rule, attachment, err)
   local content = fallback_content(rule, attachment, err)
-  if not content or content == '' then
-    return nil, err or 'viewer failed'
+  if not content or content == "" then
+    return nil, err or "viewer failed"
   end
 
   return {
     content = content,
-    filetype = rule.filetype or 'text',
+    filetype = rule.filetype or "text",
     title = default_title(attachment),
     rule = rule.name,
-    source = 'fallback',
-  }, nil
+    source = "fallback",
+  },
+    nil
 end
 
 local function is_executable(cmd)
-  return cmd and cmd ~= '' and vim.fn.executable(cmd) == 1
+  return cmd and cmd ~= "" and vim.fn.executable(cmd) == 1
 end
 
 local function try_handler(rule, attachment)
-  if type(rule.handler) ~= 'function' then
-    return nil, 'rule handler is not a function'
+  if type(rule.handler) ~= "function" then
+    return nil, "rule handler is not a function"
   end
 
   local ok, result, err = pcall(rule.handler, attachment)
@@ -97,10 +100,10 @@ local function try_handler(rule, attachment)
   end
 
   if result then
-    return normalize_result(result, rule, attachment, 'handler')
+    return normalize_result(result, rule, attachment, "handler")
   end
 
-  return nil, err or 'handler failed'
+  return nil, err or "handler failed"
 end
 
 local function try_command(command, rule, attachment)
@@ -110,7 +113,7 @@ local function try_command(command, rule, attachment)
   end
 
   if not is_executable(argv[1]) then
-    return nil, 'executable not found: ' .. tostring(argv[1])
+    return nil, "executable not found: " .. tostring(argv[1])
   end
 
   local ok, obj = pcall(function()
@@ -121,15 +124,15 @@ local function try_command(command, rule, attachment)
   end
 
   if obj.code ~= 0 then
-    return nil, obj.stderr or ('command failed: ' .. table.concat(argv, ' '))
+    return nil, obj.stderr or ("command failed: " .. table.concat(argv, " "))
   end
 
-  return normalize_result(obj.stdout or '', rule, attachment, argv[1])
+  return normalize_result(obj.stdout or "", rule, attachment, argv[1])
 end
 
 local function try_commands(rule, attachment)
-  if type(rule.commands) ~= 'table' then
-    return nil, 'rule has no commands'
+  if type(rule.commands) ~= "table" then
+    return nil, "rule has no commands"
   end
 
   local last_err
@@ -141,7 +144,7 @@ local function try_commands(rule, attachment)
     last_err = err
   end
 
-  return nil, last_err or 'all commands failed'
+  return nil, last_err or "all commands failed"
 end
 
 -- -----------------------------------------------------------------------------
@@ -156,8 +159,8 @@ end
 function V.view(attachment, opts)
   opts = opts or {}
 
-  if type(attachment) ~= 'table' then
-    return nil, 'attachment must be a table'
+  if type(attachment) ~= "table" then
+    return nil, "attachment must be a table"
   end
 
   local effective_rules = rules.apply_patches(defaults.view_rules(), opts.rules or {})
@@ -194,10 +197,10 @@ function V.view(attachment, opts)
   end
 
   if not matched then
-    return nil, 'No view rule matched attachment'
+    return nil, "No view rule matched attachment"
   end
 
-  return nil, last_err or 'No viewer succeeded'
+  return nil, last_err or "No viewer succeeded"
 end
 
 return V

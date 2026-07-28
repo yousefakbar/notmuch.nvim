@@ -316,7 +316,13 @@ return {
     run = function()
       local attach = require("notmuch.attach.parts")
       local incoming = require("notmuch.attach.incoming")
-      local part = { id = 9, content_type = "text/plain", filename = "view.txt", disposition = "attachment", size = 1 }
+      local part = {
+        id = 9,
+        content_type = "text/plain",
+        filename = "view.txt",
+        disposition = "attachment",
+        size = 1,
+      }
       local buf = attachment_buf({ part }, "id:handler-msg")
       vim.api.nvim_win_set_cursor(0, { 4, 0 })
 
@@ -347,7 +353,9 @@ return {
 
       incoming.open_part, incoming.view_part = old_open, old_view
       vim.api.nvim_buf_delete(buf, { force = true })
-      if not ok then error(err, 0) end
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
 }

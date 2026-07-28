@@ -11,39 +11,39 @@ local E = {}
 -- -----------------------------------------------------------------------------
 
 local function default_cache_dir()
-  return vim.fs.joinpath(vim.fn.stdpath('cache'), 'notmuch.nvim', 'attachments')
+  return vim.fs.joinpath(vim.fn.stdpath("cache"), "notmuch.nvim", "attachments")
 end
 
 local function normalize_message_id(message_id)
-  return tostring(message_id or ''):gsub('^id:', '')
+  return tostring(message_id or ""):gsub("^id:", "")
 end
 
 local function fallback_filename(part)
-  local content_type = part.content_type or part['content-type'] or 'application/octet-stream'
-  local ext = content_type:match('/([%w.+-]+)$') or 'bin'
-  if ext == 'plain' then
-    ext = 'txt'
-  elseif ext == 'octet-stream' then
-    ext = 'bin'
+  local content_type = part.content_type or part["content-type"] or "application/octet-stream"
+  local ext = content_type:match("/([%w.+-]+)$") or "bin"
+  if ext == "plain" then
+    ext = "txt"
+  elseif ext == "octet-stream" then
+    ext = "bin"
   end
-  return 'notmuch.' .. ext
+  return "notmuch." .. ext
 end
 
 local function sanitize_component(value)
-  value = tostring(value or '')
-  value = value:gsub('^%s+', ''):gsub('%s+$', '')
-  value = value:gsub('[/\\]', '-')
-  value = value:gsub('[%z\r\n\t]', '_')
-  if value == '' then
-    return 'unknown'
+  value = tostring(value or "")
+  value = value:gsub("^%s+", ""):gsub("%s+$", "")
+  value = value:gsub("[/\\]", "-")
+  value = value:gsub("[%z\r\n\t]", "_")
+  if value == "" then
+    return "unknown"
   end
   return value
 end
 
 local function ensure_parent_dir(path)
-  local dir = vim.fn.fnamemodify(path, ':h')
-  if vim.fn.mkdir(dir, 'p') == 0 and vim.fn.isdirectory(dir) == 0 then
-    return nil, 'failed to create directory: ' .. dir
+  local dir = vim.fn.fnamemodify(path, ":h")
+  if vim.fn.mkdir(dir, "p") == 0 and vim.fn.isdirectory(dir) == 0 then
+    return nil, "failed to create directory: " .. dir
   end
   return true
 end
@@ -61,33 +61,29 @@ end
 function E.cache_path(message_id, part, opts)
   opts = opts or {}
 
-  if type(part) ~= 'table' then
-    return nil, 'part must be a table'
+  if type(part) ~= "table" then
+    return nil, "part must be a table"
   end
 
   local normalized_id = normalize_message_id(message_id)
-  if normalized_id == '' then
-    return nil, 'message_id is required'
+  if normalized_id == "" then
+    return nil, "message_id is required"
   end
 
   if part.id == nil then
-    return nil, 'part.id is required'
+    return nil, "part.id is required"
   end
 
   local cache_dir = opts.cache_dir or default_cache_dir()
   local safe_message_id = sanitize_component(normalized_id)
 
   local filename = part.filename
-  if filename == nil or filename == '' then
+  if filename == nil or filename == "" then
     filename = fallback_filename(part)
   end
   local safe_filename = sanitize_component(filename)
 
-  return vim.fs.joinpath(
-    cache_dir,
-    safe_message_id,
-    tostring(part.id) .. '-' .. safe_filename
-  ), nil
+  return vim.fs.joinpath(cache_dir, safe_message_id, tostring(part.id) .. "-" .. safe_filename), nil
 end
 
 ---Compute cache path, reuse if present unless force = true, otherwise extract.
@@ -120,16 +116,16 @@ end
 ---@return string|nil err Error message on failure.
 function E.extract_to_path(message_id, part_id, path, opts)
   local normalized_id = normalize_message_id(message_id)
-  if normalized_id == '' then
-    return nil, 'message_id is required'
+  if normalized_id == "" then
+    return nil, "message_id is required"
   end
 
   if part_id == nil then
-    return nil, 'part_id is required'
+    return nil, "part_id is required"
   end
 
-  if not path or path == '' then
-    return nil, 'path is required'
+  if not path or path == "" then
+    return nil, "path is required"
   end
 
   local ok, err = ensure_parent_dir(path)
@@ -137,24 +133,26 @@ function E.extract_to_path(message_id, part_id, path, opts)
     return nil, err
   end
 
-  local result = vim.system({
-    'notmuch',
-    'show',
-    '--exclude=false',
-    '--part=' .. tostring(part_id),
-    'id:' .. normalized_id,
-  }, { text = false }):wait()
+  local result = vim
+    .system({
+      "notmuch",
+      "show",
+      "--exclude=false",
+      "--part=" .. tostring(part_id),
+      "id:" .. normalized_id,
+    }, { text = false })
+    :wait()
 
   if result.code ~= 0 then
-    return nil, result.stderr or 'notmuch extraction failed'
+    return nil, result.stderr or "notmuch extraction failed"
   end
 
-  local fd, open_err = io.open(path, 'wb')
+  local fd, open_err = io.open(path, "wb")
   if not fd then
     return nil, open_err
   end
 
-  fd:write(result.stdout or '')
+  fd:write(result.stdout or "")
   fd:close()
 
   return path, nil
@@ -168,8 +166,8 @@ end
 ---@return string|nil path Saved file path on success, or nil on failure.
 ---@return string|nil err Error message on failure.
 function E.save_to_path(message_id, part, path, opts)
-  if type(part) ~= 'table' then
-    return nil, 'part must be a table'
+  if type(part) ~= "table" then
+    return nil, "part must be a table"
   end
 
   return E.extract_to_path(message_id, part.id, path, opts)

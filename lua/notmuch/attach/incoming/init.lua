@@ -1,14 +1,14 @@
 local I = {}
 
-local attachment = require('notmuch.attach.incoming.attachment')
-local extractor = require('notmuch.attach.incoming.extractor')
-local opener = require('notmuch.attach.incoming.opener')
-local viewer = require('notmuch.attach.incoming.viewer')
-local renderer = require('notmuch.attach.incoming.renderer')
-local config = require('notmuch.config')
+local attachment = require("notmuch.attach.incoming.attachment")
+local extractor = require("notmuch.attach.incoming.extractor")
+local opener = require("notmuch.attach.incoming.opener")
+local viewer = require("notmuch.attach.incoming.viewer")
+local renderer = require("notmuch.attach.incoming.renderer")
+local config = require("notmuch.config")
 
 local function incoming_config()
-  return (((config.options or {}).attach or {}).incoming) or {}
+  return ((config.options or {}).attach or {}).incoming or {}
 end
 
 local function extract_attachment(part, message_id, incoming_opts)

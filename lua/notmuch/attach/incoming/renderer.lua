@@ -10,19 +10,19 @@ local function normalize_window_config(config)
   config = config or {}
 
   return {
-    type = config.type or 'float',
+    type = config.type or "float",
     width = config.width or 0.8,
     height = config.height or 0.8,
-    border = config.border or 'rounded',
+    border = config.border or "rounded",
   }
 end
 
 local function resolve_dimension(value, total)
-  if type(value) == 'number' and value > 0 and value <= 1 then
+  if type(value) == "number" and value > 0 and value <= 1 then
     return math.max(1, math.floor(total * value))
   end
 
-  if type(value) == 'number' and value > 1 then
+  if type(value) == "number" and value > 1 then
     return math.floor(value)
   end
 
@@ -30,32 +30,32 @@ local function resolve_dimension(value, total)
 end
 
 local function result_lines(result)
-  local content = result and result.content or ''
-  return vim.split(content, '\n', { plain = true })
+  local content = result and result.content or ""
+  return vim.split(content, "\n", { plain = true })
 end
 
 local function default_title(result, attachment)
-  if result and result.title and result.title ~= '' then
+  if result and result.title and result.title ~= "" then
     return result.title
   end
 
   local filename = attachment and attachment.part and attachment.part.filename
-  if filename and filename ~= '' then
+  if filename and filename ~= "" then
     return filename
   end
 
-  return 'Attachment preview'
+  return "Attachment preview"
 end
 
 local function attachment_filename(attachment)
   local filename = attachment and attachment.part and attachment.part.filename
-  if filename and filename ~= '' then
+  if filename and filename ~= "" then
     return filename
   end
 end
 
 local function detect_text_filetype(result, attachment, buf)
-  if result.filetype ~= 'text' or result.rule ~= 'text' then
+  if result.filetype ~= "text" or result.rule ~= "text" then
     return result.filetype
   end
 
@@ -85,20 +85,20 @@ end
 function R.render(result, attachment, opts)
   opts = opts or {}
 
-  if type(result) ~= 'table' then
-    error('notmuch.attach.incoming.renderer.render: result must be a table')
+  if type(result) ~= "table" then
+    error("notmuch.attach.incoming.renderer.render: result must be a table")
   end
 
   local window = normalize_window_config(opts.window)
   local buf = v.nvim_create_buf(false, true)
-  v.nvim_set_option_value('bufhidden', 'wipe', { buf = buf })
+  v.nvim_set_option_value("bufhidden", "wipe", { buf = buf })
 
   local lines = result_lines(result)
   v.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
   local filetype = detect_text_filetype(result, attachment, buf)
-  if filetype and filetype ~= '' then
-    v.nvim_set_option_value('filetype', filetype, { buf = buf })
+  if filetype and filetype ~= "" then
+    v.nvim_set_option_value("filetype", filetype, { buf = buf })
   end
 
   local width = resolve_dimension(window.width, vim.o.columns)
@@ -111,20 +111,20 @@ function R.render(result, attachment, opts)
 
   local win_opts = {
     border = window.border,
-    relative = 'editor',
-    style = 'minimal',
+    relative = "editor",
+    style = "minimal",
     height = height,
     width = width,
     row = row,
     col = col,
     title = default_title(result, attachment),
-    title_pos = 'center',
+    title_pos = "center",
   }
 
   local win = v.nvim_open_win(buf, true, win_opts)
 
-  v.nvim_set_option_value('modifiable', false, { buf = buf })
-  vim.keymap.set('n', 'q', function()
+  v.nvim_set_option_value("modifiable", false, { buf = buf })
+  vim.keymap.set("n", "q", function()
     if v.nvim_win_is_valid(win) then
       v.nvim_win_close(win, false)
     end

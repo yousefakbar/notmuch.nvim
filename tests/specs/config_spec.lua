@@ -33,13 +33,16 @@ return {
         ["user.name"] = false,
         ["user.primary_email"] = false,
       }, function()
-        H.eq(true, config.setup({
-          notmuch_db_path = "~/custom-db",
-          maildir_sync_cmd = "true",
-          sync = { sync_mode = "background" },
-          drafts = { auto_open_attachment_window = true },
-          keymaps = { sendmail = "<F5>" },
-        }))
+        H.eq(
+          true,
+          config.setup({
+            notmuch_db_path = "~/custom-db",
+            maildir_sync_cmd = "true",
+            sync = { sync_mode = "background" },
+            drafts = { auto_open_attachment_window = true },
+            keymaps = { sendmail = "<F5>" },
+          })
+        )
         H.eq(vim.fn.expand("~/custom-db"), config.options.notmuch_db_path)
         H.eq("User <user@localhost>", config.options.from)
         H.eq("background", config.options.sync.sync_mode)
@@ -109,38 +112,41 @@ return {
         ["user.name"] = "Tester",
         ["user.primary_email"] = "tester@example.com",
       }, function()
-        H.eq(true, config.setup({
-          attach = {
-            incoming = {
-              open = {
-                rules = {
-                  prepend = {
-                    {
-                      name = "pdf-zathura",
-                      match = { ext = "pdf" },
-                      command = { "zathura", "$path" },
-                      detach = true,
+        H.eq(
+          true,
+          config.setup({
+            attach = {
+              incoming = {
+                open = {
+                  rules = {
+                    prepend = {
+                      {
+                        name = "pdf-zathura",
+                        match = { ext = "pdf" },
+                        command = { "zathura", "$path" },
+                        detach = true,
+                      },
                     },
                   },
                 },
-              },
-              view = {
-                rules = {
-                  disable = { "pdf" },
-                  replace = {
-                    html = {
-                      name = "html",
-                      match = { content_type = "text/html" },
-                      commands = {
-                        { "custom-html", "$path" },
+                view = {
+                  rules = {
+                    disable = { "pdf" },
+                    replace = {
+                      html = {
+                        name = "html",
+                        match = { content_type = "text/html" },
+                        commands = {
+                          { "custom-html", "$path" },
+                        },
                       },
                     },
                   },
                 },
               },
             },
-          },
-        }))
+          })
+        )
 
         local incoming = config.options.attach.incoming
         local open_rule = incoming.open.rules.prepend[1]
@@ -165,36 +171,39 @@ return {
         ["user.name"] = "Tester",
         ["user.primary_email"] = "tester@example.com",
       }, function()
-        H.eq(true, config.setup({
-          attachments = {
-            cache_dir = "~/notmuch-shorthand-cache",
-            open = {
-              {
-                name = "pdf-firefox",
-                match = { ext = "pdf" },
-                command = { "firefox", "$path" },
-                detach = true,
-                fallback = "Could not open PDF with Firefox",
-              },
-            },
-            view = {
-              {
-                name = "pdf-text",
-                match = { content_type = "application/pdf" },
-                commands = {
-                  { "pdftotext", "-raw", "$path", "-" },
+        H.eq(
+          true,
+          config.setup({
+            attachments = {
+              cache_dir = "~/notmuch-shorthand-cache",
+              open = {
+                {
+                  name = "pdf-firefox",
+                  match = { ext = "pdf" },
+                  command = { "firefox", "$path" },
+                  detach = true,
+                  fallback = "Could not open PDF with Firefox",
                 },
-                filetype = "text",
-                fallback = "Install pdftotext to preview PDFs.",
+              },
+              view = {
+                {
+                  name = "pdf-text",
+                  match = { content_type = "application/pdf" },
+                  commands = {
+                    { "pdftotext", "-raw", "$path", "-" },
+                  },
+                  filetype = "text",
+                  fallback = "Install pdftotext to preview PDFs.",
+                },
+              },
+              window = {
+                width = 0.9,
+                height = 0.7,
+                border = "single",
               },
             },
-            window = {
-              width = 0.9,
-              height = 0.7,
-              border = "single",
-            },
-          },
-        }))
+          })
+        )
 
         local incoming = config.options.attach.incoming
         H.eq(vim.fn.expand("~/notmuch-shorthand-cache"), incoming.cache_dir)
@@ -243,13 +252,16 @@ return {
         ["user.name"] = "Tester",
         ["user.primary_email"] = "tester@example.com",
       }, function()
-        H.eq(true, config.setup({
-          attach = {
-            incoming = {
-              cache_dir = "~/notmuch-test-cache",
+        H.eq(
+          true,
+          config.setup({
+            attach = {
+              incoming = {
+                cache_dir = "~/notmuch-test-cache",
+              },
             },
-          },
-        }))
+          })
+        )
 
         H.eq(vim.fn.expand("~/notmuch-test-cache"), config.options.attach.incoming.cache_dir)
       end)

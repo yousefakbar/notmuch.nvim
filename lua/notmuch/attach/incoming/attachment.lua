@@ -24,12 +24,12 @@ local A = {}
 -- -----------------------------------------------------------------------------
 
 local function normalize_message_id(id)
-  return tostring(id or ''):gsub('^id:', '')
+  return tostring(id or ""):gsub("^id:", "")
 end
 
 local function get_ext(filename)
-  local ext = filename:match('%.([^%.]+)$')
-  return ext and ext:lower() or ''
+  local ext = filename:match("%.([^%.]+)$")
+  return ext and ext:lower() or ""
 end
 
 -- -----------------------------------------------------------------------------
@@ -42,19 +42,19 @@ end
 ---@param path string|nil Extracted local path
 ---@return NotmuchIncomingAttachment
 function A.from_part(part, message_id, path)
-  if type(part) ~= 'table' then
-    error('notmuch.attach.incoming.attachment.from_part: part must be a table')
+  if type(part) ~= "table" then
+    error("notmuch.attach.incoming.attachment.from_part: part must be a table")
   end
 
   local normalized_message_id = normalize_message_id(message_id)
-  if normalized_message_id == '' then
-    error('notmuch.attach.incoming.attachment.from_part: message_id is required')
+  if normalized_message_id == "" then
+    error("notmuch.attach.incoming.attachment.from_part: message_id is required")
   end
 
-  local filename = part.filename or ''
-  local content_type = part.content_type or part['content-type'] or 'application/octet-stream'
-  local disposition = part.disposition or part['content-disposition'] or 'inline'
-  local size = part.size or part['content-length'] or 0
+  local filename = part.filename or ""
+  local content_type = part.content_type or part["content-type"] or "application/octet-stream"
+  local disposition = part.disposition or part["content-disposition"] or "inline"
+  local size = part.size or part["content-length"] or 0
 
   return {
     path = path,
