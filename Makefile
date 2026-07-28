@@ -26,11 +26,11 @@ deps:
 
 lint:
 	@command -v stylua >/dev/null || { echo 'Missing dependency: stylua'; exit 1; }
-	stylua --check lua ftplugin tests
+	@stylua --check lua ftplugin tests
 
 format:
 	@command -v stylua >/dev/null || { echo 'Missing dependency: stylua'; exit 1; }
-	stylua lua ftplugin tests
+	@stylua lua ftplugin tests
 
 setup: deps
 	@tests/scripts/setup-notmuch-db.sh
