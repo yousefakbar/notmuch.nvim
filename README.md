@@ -137,6 +137,7 @@ You can configure several global options to tailor the plugin's behavior:
 | `notmuch_db_path`  | Directory containing the `.notmuch/` dir                                        | From `notmuch config`           |
 | `maildir_sync_cmd` | Bash command to run for syncing maildir                                         | `mbsync -a`                     |
 | `sync.sync_mode`   | Sync display mode: `"buffer"`, `"background"`, or `"terminal"` (PTY with stdin) | `buffer`                        |
+| `send.send_mode`   | Send mode: `"terminal"` (PTY with stdin) or `"background"`                       | `terminal`                      |
 | `queries`          | Saved/pinned queries shown at top of `:Notmuch` dashboard; hidden when empty    | `{}`                            |
 | `keymaps`          | Configure any (WIP) command's keymap                                            | See `config.lua`[1]             |
 | `open_handler`     | Callback function for opening attachments                                       | Runs OS-aware `open`[2]         |
@@ -162,6 +163,9 @@ Example configuration in plugin manager (lazy.nvim):
         maildir_sync_cmd = "mbsync personal",
         sync = {
             sync_mode = "buffer" -- OR "background" OR "terminal"
+        },
+        send = {
+            send_mode = "terminal" -- OR "background"
         },
         keymaps = {
             sendmail = "<C-g><C-g>",
