@@ -31,12 +31,18 @@ end
 
 local function sanitize_component(value)
   value = tostring(value or "")
+
+  -- Trims leading and trailing whitespace
   value = value:gsub("^%s+", ""):gsub("%s+$", "")
+  -- Replace "\" and "/" with "-"
   value = value:gsub("[/\\]", "-")
+  -- Replace null and newlines with "_"
   value = value:gsub("[%z\r\n\t]", "_")
+
   if value == "" then
     return "unknown"
   end
+
   return value
 end
 
@@ -74,8 +80,13 @@ function E.cache_path(message_id, part, opts)
     return nil, "part.id is required"
   end
 
+  local part_id = tonumber(part.id)
+  if not part_id or part_id < 1 or part_id ~= math.floor(part_id) then
+    return nil, "part.id must be a positive integer"
+  end
+
   local cache_dir = opts.cache_dir or default_cache_dir()
-  local safe_message_id = sanitize_component(normalized_id)
+  local safe_message_id = vim.fn.sha256(normalized_id)
 
   local filename = part.filename
   if filename == nil or filename == "" then
@@ -83,7 +94,7 @@ function E.cache_path(message_id, part, opts)
   end
   local safe_filename = sanitize_component(filename)
 
-  return vim.fs.joinpath(cache_dir, safe_message_id, tostring(part.id) .. "-" .. safe_filename), nil
+  return vim.fs.joinpath(cache_dir, safe_message_id, tostring(part_id) .. "-" .. safe_filename), nil
 end
 
 ---Compute cache path, reuse if present unless force = true, otherwise extract.

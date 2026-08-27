@@ -39,7 +39,26 @@ return {
       }, { cache_dir = "/tmp/cache" })
 
       H.eq(nil, err)
-      H.eq(vim.fs.joinpath("/tmp/cache", "abc-123", "2-..-unsafe-name.pdf"), path)
+      H.eq(vim.fs.joinpath("/tmp/cache", vim.fn.sha256("abc/123"), "2-..-unsafe-name.pdf"), path)
+    end,
+  },
+  {
+    name = "attach.incoming.extractor.cache_path avoids message id collisions",
+    run = function()
+      local extractor = require("notmuch.attach.incoming.extractor")
+      local part = {
+        id = 2,
+        filename = "invoice.pdf",
+        content_type = "application/pdf",
+      }
+      local opts = { cache_dir = "/tmp/cache" }
+
+      local slash_path = assert(extractor.cache_path("a/b@example.com", part, opts))
+      local hyphen_path = assert(extractor.cache_path("a-b@example.com", part, opts))
+      local repeated_path = assert(extractor.cache_path("a/b@example.com", part, opts))
+
+      H.ok(slash_path ~= hyphen_path, "distinct message ids must not share a cache path")
+      H.eq(slash_path, repeated_path, "cache paths must be deterministic")
     end,
   },
   {
@@ -53,7 +72,7 @@ return {
       }, { cache_dir = "/tmp/cache" })
 
       H.eq(nil, err)
-      H.eq(vim.fs.joinpath("/tmp/cache", "msg1", "1-notmuch.txt"), path)
+      H.eq(vim.fs.joinpath("/tmp/cache", vim.fn.sha256("msg1"), "1-notmuch.txt"), path)
 
       path, err = extractor.cache_path("msg1", {
         id = 2,
@@ -61,7 +80,7 @@ return {
       }, { cache_dir = "/tmp/cache" })
 
       H.eq(nil, err)
-      H.eq(vim.fs.joinpath("/tmp/cache", "msg1", "2-notmuch.bin"), path)
+      H.eq(vim.fs.joinpath("/tmp/cache", vim.fn.sha256("msg1"), "2-notmuch.bin"), path)
     end,
   },
   {
@@ -81,6 +100,14 @@ return {
       path, err = extractor.cache_path("msg1", {}, { cache_dir = "/tmp/cache" })
       H.eq(nil, path)
       H.contains(err, "part.id is required")
+
+      path, err = extractor.cache_path(
+        "msg1",
+        { id = "../../outside" },
+        { cache_dir = "/tmp/cache" }
+      )
+      H.eq(nil, path)
+      H.contains(err, "part.id must be a positive integer")
     end,
   },
   {
