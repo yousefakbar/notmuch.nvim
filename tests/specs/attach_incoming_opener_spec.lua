@@ -15,12 +15,14 @@ local function attachment()
   }
 end
 
-local function expected_system_opener()
+local function expected_system_command(path)
   local sysname = vim.uv.os_uname().sysname
-  return (sysname == "Darwin" and "open")
-    or (sysname == "Linux" and "xdg-open")
-    or (sysname:match("Windows") and "start")
-    or "xdg-open"
+  if sysname == "Darwin" then
+    return { "open", path }
+  elseif sysname:match("Windows") then
+    return { "cmd.exe", "/d", "/s", "/c", "start", "", path }
+  end
+  return { "xdg-open", path }
 end
 
 local function with_open_mocks(mocks, fn)
@@ -98,7 +100,7 @@ return {
         local ok, err = opener.open(attachment())
         H.eq(true, ok)
         H.eq(nil, err)
-        H.same({ expected_system_opener(), "/tmp/doc.pdf" }, captured_cmd)
+        H.same(expected_system_command("/tmp/doc.pdf"), captured_cmd)
         H.same({ detach = true }, captured_opts)
       end)
     end,
@@ -124,7 +126,7 @@ return {
         local ok, err = opener.open(attachment())
         H.eq(true, ok)
         H.eq(nil, err)
-        H.same({ expected_system_opener(), "/tmp/doc.pdf" }, captured_cmd)
+        H.same(expected_system_command("/tmp/doc.pdf"), captured_cmd)
       end)
     end,
   },

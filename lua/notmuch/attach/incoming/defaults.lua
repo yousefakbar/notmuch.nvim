@@ -12,7 +12,7 @@ local function system_open_command()
   elseif sysname == "Linux" then
     return { "xdg-open", "$path" }
   elseif sysname:match("Windows") then
-    return { "start", "$path" }
+    return { "cmd.exe", "/d", "/s", "/c", "start", "", "$path" }
   end
 
   return { "xdg-open", "$path" }

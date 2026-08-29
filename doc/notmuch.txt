@@ -422,20 +422,20 @@ option will be listed with its default value.
   to |attach.incoming.view.window|.
 
   Default value: >
-    { type = 'float', width = 0.8, height = 0.8, border = 'rounded' }
+    { width = 0.8, height = 0.8, border = 'rounded' }
 <
 
 *attach.incoming.cache_dir*
   Advanced path for the cache directory used when opening or viewing
   received-message attachments. Open/view actions extract the selected MIME part
-  here before rule execution. Save actions still write directly to the
-  user-selected destination.
+  here before rule execution. Save actions use the same extractor but write
+  atomically to the user-selected destination.
 
 *attach.incoming.open.rules*
   Advanced patch table for received attachment open rules. Supported patch
   fields are `prepend`, `append`, `replace`, and `disable`. The default `system`
   rule prefers `vim.ui.open()` when available and falls back to the OS opener
-  command (`open`, `xdg-open`, or `start`).
+  command (`open`, `xdg-open`, or `cmd.exe /c start`).
 
 *attach.incoming.view.rules*
   Advanced patch table for received attachment view rules. Default rules support

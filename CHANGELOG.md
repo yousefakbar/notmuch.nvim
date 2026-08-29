@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Replaced deprecated `vim.loop` usage with `vim.uv` for Neovim libuv APIs.
 - Received attachment open/view actions now use deterministic cache extraction and rule registries instead of top-level handler callbacks.
+- Received attachment open, view, and save extraction now streams through temporary files and atomically publishes completed files.
 - The default received attachment opener now prefers `vim.ui.open()` when available and falls back to the OS opener command.
 
 ### Removed

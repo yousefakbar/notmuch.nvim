@@ -143,7 +143,7 @@ You can configure several global options to tailor the plugin's behavior:
 | `attachments.cache_dir` | Shorthand for received attachment open/view cache directory | `stdpath("cache")/notmuch.nvim/attachments` |
 | `attachments.open` | List of received attachment open rules tried before defaults | `{}` |
 | `attachments.view` | List of received attachment view rules tried before defaults | `{}` |
-| `attachments.window` | Shorthand for floating attachment preview window options | `{ type = "float", width = 0.8, height = 0.8, border = "rounded" }` |
+| `attachments.window` | Shorthand for floating attachment preview window options | `{ width = 0.8, height = 0.8, border = "rounded" }` |
 | `attach.incoming.*` | Advanced received attachment rule patch API | See below |
 | `render_html_body` | Render HTML email bodies inline using `w3m` (requires `w3m` installed)          | `false`                         |
 | `thread_view_mode` | Thread view mode: `"threaded"`, `"newest-first"`, or `"oldest-first"`        | `"threaded"`                   |
@@ -216,7 +216,8 @@ open automatically whenever a draft opens.
 Received-message attachments use rule registries instead of monolithic handler
 callbacks. Open/view actions extract the selected MIME part to
 `attach.incoming.cache_dir`, build a structured attachment object, then resolve
-open or view rules. Save actions still write directly to the user-selected path.
+open or view rules. Save actions use the same extractor but write atomically to
+the user-selected path.
 
 For everyday customization, use the `attachments` shorthand. Rules listed in
 `attachments.open` and `attachments.view` are tried before the defaults. The old

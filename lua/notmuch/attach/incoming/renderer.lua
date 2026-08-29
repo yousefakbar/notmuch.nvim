@@ -10,7 +10,6 @@ local function normalize_window_config(config)
   config = config or {}
 
   return {
-    type = config.type or "float",
     width = config.width or 0.8,
     height = config.height or 0.8,
     border = config.border or "rounded",

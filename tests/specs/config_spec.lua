@@ -96,7 +96,7 @@ return {
         H.same({}, incoming.view.rules.replace)
         H.same({}, incoming.view.rules.disable)
 
-        H.eq("float", incoming.view.window.type)
+        H.eq(nil, incoming.view.window.type)
         H.eq(0.8, incoming.view.window.width)
         H.eq(0.8, incoming.view.window.height)
         H.eq("rounded", incoming.view.window.border)
@@ -225,6 +225,38 @@ return {
         H.eq(0.9, incoming.view.window.width)
         H.eq(0.7, incoming.view.window.height)
         H.eq("single", incoming.view.window.border)
+      end)
+    end,
+  },
+  {
+    name = "config.setup does not mutate or duplicate reused attachment shorthand options",
+    run = function()
+      local config = require("notmuch.config")
+      local opts = {
+        attachments = {
+          open = {
+            {
+              name = "custom",
+              match = "*",
+              command = { "custom-open", "$path" },
+            },
+          },
+        },
+      }
+
+      with_mocked_notmuch_config({
+        ["database.path"] = "/tmp/notmuch-db",
+        ["user.name"] = "Tester",
+        ["user.primary_email"] = "tester@example.com",
+      }, function()
+        H.eq(true, config.setup(opts))
+        H.eq(1, #config.options.attach.incoming.open.rules.prepend)
+        H.eq(nil, opts.attach)
+
+        H.eq(true, config.setup(opts))
+        H.eq(1, #config.options.attach.incoming.open.rules.prepend)
+        H.eq(nil, opts.attach)
+        H.eq(1, #opts.attachments.open)
       end)
     end,
   },

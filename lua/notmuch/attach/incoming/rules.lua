@@ -111,7 +111,19 @@ function R.matches(rule, attachment)
   end
 
   if type(matcher) == "function" then
-    return matcher(attachment) and true or false
+    local ok, matched = pcall(matcher, attachment)
+    if not ok then
+      vim.notify(
+        string.format(
+          "notmuch.nvim: attachment rule %q matcher failed: %s",
+          tostring(rule.name or "<unnamed>"),
+          tostring(matched)
+        ),
+        vim.log.levels.ERROR
+      )
+      return false
+    end
+    return matched and true or false
   end
 
   if type(matcher) == "table" then

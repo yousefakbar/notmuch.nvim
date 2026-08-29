@@ -92,7 +92,6 @@ C.defaults = function()
             disable = {},
           },
           window = {
-            type = "float",
             width = 0.8,
             height = 0.8,
             border = "rounded",
@@ -171,7 +170,7 @@ end
 --
 ---@usage: see `init.lua`'s `setup()` function for invocation
 C.setup = function(opts)
-  local options = opts or {}
+  local options = vim.deepcopy(opts or {})
   local defaults = C.defaults()
 
   if not defaults then

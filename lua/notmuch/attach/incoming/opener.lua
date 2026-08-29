@@ -29,11 +29,6 @@ local function is_executable(cmd)
     return false
   end
 
-  -- `start` is a Windows shell builtin used by the legacy opener fallback.
-  if cmd == "start" then
-    return true
-  end
-
   return vim.fn.executable(cmd) == 1
 end
 

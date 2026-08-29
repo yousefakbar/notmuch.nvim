@@ -124,6 +124,31 @@ return {
     end,
   },
   {
+    name = "attach.incoming.rules.matches reports and skips matcher errors",
+    run = function()
+      local rules = require("notmuch.attach.incoming.rules")
+      local old_notify = vim.notify
+      local note
+      vim.notify = function(msg, level)
+        note = { msg = msg, level = level }
+      end
+
+      local ok, matched = pcall(rules.matches, {
+        name = "broken",
+        match = function()
+          error("matcher exploded")
+        end,
+      }, attachment())
+
+      vim.notify = old_notify
+      H.eq(true, ok)
+      H.eq(false, matched)
+      H.contains(note.msg, 'attachment rule "broken" matcher failed')
+      H.contains(note.msg, "matcher exploded")
+      H.eq(vim.log.levels.ERROR, note.level)
+    end,
+  },
+  {
     name = "attach.incoming.rules.matches supports MIME prefix wildcards",
     run = function()
       local rules = require("notmuch.attach.incoming.rules")

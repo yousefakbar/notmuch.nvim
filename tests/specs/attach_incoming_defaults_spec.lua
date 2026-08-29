@@ -54,12 +54,34 @@ return {
       H.contains(rule.fallback, "Could not open attachment")
 
       local sysname = vim.uv.os_uname().sysname
-      local expected = (sysname == "Darwin" and "open")
-        or (sysname == "Linux" and "xdg-open")
-        or (sysname:match("Windows") and "start")
-        or "xdg-open"
+      local expected
+      if sysname == "Darwin" then
+        expected = { "open", "$path" }
+      elseif sysname:match("Windows") then
+        expected = { "cmd.exe", "/d", "/s", "/c", "start", "", "$path" }
+      else
+        expected = { "xdg-open", "$path" }
+      end
 
-      H.same({ expected, "$path" }, rule.command)
+      H.same(expected, rule.command)
+    end,
+  },
+  {
+    name = "attach.incoming.defaults.open_rules invokes Windows start through cmd.exe",
+    run = function()
+      local defaults = require("notmuch.attach.incoming.defaults")
+      local old_uname = vim.uv.os_uname
+      vim.uv.os_uname = function()
+        return { sysname = "Windows_NT" }
+      end
+
+      local ok, ruleset = pcall(defaults.open_rules)
+      vim.uv.os_uname = old_uname
+      if not ok then
+        error(ruleset, 0)
+      end
+
+      H.same({ "cmd.exe", "/d", "/s", "/c", "start", "", "$path" }, ruleset[1].command)
     end,
   },
   {
