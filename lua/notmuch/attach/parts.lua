@@ -5,6 +5,7 @@ local P = {}
 --------------------------------------------------------------------------------
 
 local v = vim.api
+local extractor = require("notmuch.attach.incoming.extractor")
 local util = require("notmuch.util")
 local thread = require("notmuch.thread")
 
@@ -306,22 +307,14 @@ function P.save_attachment_part(savedir, prompt_user)
     filepath = dir .. "/" .. filename
   end
 
-  -- Save the file using notmuch (properly escape filepath)
-  local cmd = string.format(
-    "notmuch show --exclude=false --part=%d '%s' > %s",
-    part.id,
-    id,
-    vim.fn.shellescape(filepath)
-  )
-  vim.fn.system(cmd)
-
-  if vim.v.shell_error == 0 then
-    print("Saved to: " .. filepath)
-    return filepath
-  else
-    print("Failed to save attachment")
+  local saved_path, err = extractor.save_to_path(id, part, filepath)
+  if not saved_path then
+    vim.notify(err or "Failed to save attachment", vim.log.levels.ERROR)
     return nil
   end
+
+  print("Saved to: " .. saved_path)
+  return saved_path
 end
 
 --- Opens the MIME part at cursor with the incoming attachment opener.

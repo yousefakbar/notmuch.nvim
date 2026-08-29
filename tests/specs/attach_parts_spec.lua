@@ -31,14 +31,12 @@ local function attachment_buf(parts, name)
   return buf
 end
 
-local function with_system_result(code, fn)
-  local old_system = vim.fn.system
-  vim.fn.system = function(cmd)
-    local result = old_system(code == 0 and "true" or "false")
-    return result
-  end
+local function with_save_extractor(mock, fn)
+  local extractor = require("notmuch.attach.incoming.extractor")
+  local old_save_to_path = extractor.save_to_path
+  extractor.save_to_path = mock
   local ok, err = pcall(fn)
-  vim.fn.system = old_system
+  extractor.save_to_path = old_save_to_path
   if not ok then
     error(err, 0)
   end
@@ -173,36 +171,72 @@ return {
         { id = 3, content_type = "text/plain", filename = "", disposition = "inline", size = 1 },
       }
       local buf = attachment_buf(parts, "id:save-msg")
-      local commands = {}
-      local old_system = vim.fn.system
-      vim.fn.system = function(cmd)
-        commands[#commands + 1] = cmd
-        return old_system("true")
+      local extractions = {}
+
+      with_save_extractor(function(message_id, part, path)
+        extractions[#extractions + 1] = { message_id = message_id, part = part, path = path }
+        return path, nil
+      end, function()
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+        H.eq(nil, attach.save_attachment_part(dir, false))
+        vim.api.nvim_win_set_cursor(0, { 6, 0 })
+        H.eq(nil, attach.save_attachment_part(dir, false))
+
+        vim.api.nvim_win_set_cursor(0, { 4, 0 })
+        local saved
+        silence_print(function()
+          saved = attach.save_attachment_part(dir, false)
+        end)
+        H.eq(dir .. "/unsafe-name.pdf", saved)
+        H.eq("id:save-msg", extractions[#extractions].message_id)
+        H.same(parts[1], extractions[#extractions].part)
+        H.eq(dir .. "/unsafe-name.pdf", extractions[#extractions].path)
+
+        vim.api.nvim_win_set_cursor(0, { 5, 0 })
+        silence_print(function()
+          saved = attach.save_attachment_part(dir, false)
+        end)
+        H.eq(dir .. "/notmuch.txt", saved)
+        H.eq("id:save-msg", extractions[#extractions].message_id)
+        H.same(parts[2], extractions[#extractions].part)
+        H.eq(dir .. "/notmuch.txt", extractions[#extractions].path)
+        H.eq(2, #extractions)
+      end)
+
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end,
+  },
+  {
+    name = "attach.parts.save_attachment_part reports extraction failures",
+    run = function()
+      local attach = require("notmuch.attach.parts")
+      local dir = H.tmpdir()
+      local part = {
+        id = 2,
+        content_type = "text/plain",
+        filename = "failed.txt",
+        disposition = "attachment",
+        size = 1,
+      }
+      local buf = attachment_buf({ part }, "id:failed-msg")
+      vim.api.nvim_win_set_cursor(0, { 4, 0 })
+
+      local old_notify = vim.notify
+      local note
+      vim.notify = function(msg, level)
+        note = { msg = msg, level = level }
       end
 
-      vim.api.nvim_win_set_cursor(0, { 1, 0 })
-      H.eq(nil, attach.save_attachment_part(dir, false))
-      vim.api.nvim_win_set_cursor(0, { 6, 0 })
-      H.eq(nil, attach.save_attachment_part(dir, false))
-
-      vim.api.nvim_win_set_cursor(0, { 4, 0 })
-      local saved
-      silence_print(function()
-        saved = attach.save_attachment_part(dir, false)
+      with_save_extractor(function()
+        return nil, "extraction failed"
+      end, function()
+        H.eq(nil, attach.save_attachment_part(dir, false))
       end)
-      H.eq(dir .. "/unsafe-name.pdf", saved)
-      H.contains(commands[#commands], "--part=2")
-      H.contains(commands[#commands], "'id:save-msg'")
-      H.contains(commands[#commands], vim.fn.shellescape(dir .. "/unsafe-name.pdf"))
 
-      vim.api.nvim_win_set_cursor(0, { 5, 0 })
-      silence_print(function()
-        saved = attach.save_attachment_part(dir, false)
-      end)
-      H.eq(dir .. "/notmuch.txt", saved)
-      H.contains(commands[#commands], "--part=3")
+      H.contains(note.msg, "extraction failed")
+      H.eq(vim.log.levels.ERROR, note.level)
 
-      vim.fn.system = old_system
+      vim.notify = old_notify
       vim.api.nvim_buf_delete(buf, { force = true })
     end,
   },
@@ -224,45 +258,44 @@ return {
       local buf = attachment_buf({ part }, "id:prompt-msg")
       vim.api.nvim_win_set_cursor(0, { 4, 0 })
 
-      local old_input, old_confirm, old_notify, old_system =
-        vim.fn.input, vim.fn.confirm, vim.notify, vim.fn.system
+      local old_input, old_confirm, old_notify = vim.fn.input, vim.fn.confirm, vim.notify
       local notes = {}
       vim.notify = function(msg, level)
         notes[#notes + 1] = { msg = msg, level = level }
       end
       local inputs = { "", missing_dir .. "/doc.txt", empty_dir, existing, existing }
       local confirms = { 2, 1 }
-      local commands = {}
+      local extractions = {}
       vim.fn.input = function()
         return table.remove(inputs, 1)
       end
       vim.fn.confirm = function()
         return table.remove(confirms, 1)
       end
-      vim.fn.system = function(cmd)
-        commands[#commands + 1] = cmd
-        return old_system("true")
-      end
 
-      H.eq(nil, attach.save_attachment_part(nil, true))
-      H.contains(notes[#notes].msg, "Save cancelled")
-      H.eq(nil, attach.save_attachment_part(nil, true))
-      H.contains(notes[#notes].msg, "Directory does not exist")
-      local saved
-      silence_print(function()
-        saved = attach.save_attachment_part(nil, true)
+      with_save_extractor(function(message_id, selected, path)
+        extractions[#extractions + 1] = { message_id = message_id, part = selected, path = path }
+        return path, nil
+      end, function()
+        H.eq(nil, attach.save_attachment_part(nil, true))
+        H.contains(notes[#notes].msg, "Save cancelled")
+        H.eq(nil, attach.save_attachment_part(nil, true))
+        H.contains(notes[#notes].msg, "Directory does not exist")
+        local saved
+        silence_print(function()
+          saved = attach.save_attachment_part(nil, true)
+        end)
+        H.eq(empty_dir .. "/doc.txt", saved)
+        H.eq(nil, attach.save_attachment_part(nil, true))
+        H.contains(notes[#notes].msg, "Save cancelled")
+        silence_print(function()
+          saved = attach.save_attachment_part(nil, true)
+        end)
+        H.eq(existing, saved)
+        H.eq(2, #extractions)
       end)
-      H.eq(empty_dir .. "/doc.txt", saved)
-      H.eq(nil, attach.save_attachment_part(nil, true))
-      H.contains(notes[#notes].msg, "Save cancelled")
-      silence_print(function()
-        saved = attach.save_attachment_part(nil, true)
-      end)
-      H.eq(existing, saved)
-      H.eq(2, #commands)
 
-      vim.fn.input, vim.fn.confirm, vim.notify, vim.fn.system =
-        old_input, old_confirm, old_notify, old_system
+      vim.fn.input, vim.fn.confirm, vim.notify = old_input, old_confirm, old_notify
       vim.api.nvim_buf_delete(buf, { force = true })
     end,
   },
@@ -281,9 +314,8 @@ return {
       local buf = attachment_buf({ part }, "id:blocked-msg")
       vim.api.nvim_win_set_cursor(0, { 4, 0 })
 
-      local old_input, old_notify, old_filewritable, old_system =
-        vim.fn.input, vim.notify, vim.fn.filewritable, vim.fn.system
-      local note, ran_system
+      local old_input, old_notify, old_filewritable = vim.fn.input, vim.notify, vim.fn.filewritable
+      local note, extracted
       vim.fn.input = function()
         return dir .. "/blocked.txt"
       end
@@ -293,21 +325,20 @@ return {
         end
         return old_filewritable(path)
       end
-      vim.fn.system = function(cmd)
-        ran_system = cmd
-        return old_system(cmd)
-      end
       vim.notify = function(msg, level)
         note = { msg = msg, level = level }
       end
 
-      H.eq(nil, attach.save_attachment_part(nil, true))
+      with_save_extractor(function()
+        extracted = true
+      end, function()
+        H.eq(nil, attach.save_attachment_part(nil, true))
+      end)
       H.contains(note.msg, "Directory is not writable")
       H.eq(vim.log.levels.ERROR, note.level)
-      H.eq(nil, ran_system)
+      H.eq(nil, extracted)
 
-      vim.fn.input, vim.notify, vim.fn.filewritable, vim.fn.system =
-        old_input, old_notify, old_filewritable, old_system
+      vim.fn.input, vim.notify, vim.fn.filewritable = old_input, old_notify, old_filewritable
       vim.api.nvim_buf_delete(buf, { force = true })
     end,
   },
@@ -325,10 +356,6 @@ return {
       }
       local buf = attachment_buf({ part }, "id:handler-msg")
       vim.api.nvim_win_set_cursor(0, { 4, 0 })
-
-      silence_print(function()
-        H.eq(nil, attach.save_attachment_part("/dev/null", false))
-      end)
 
       local old_open, old_view = incoming.open_part, incoming.view_part
       local opened, viewed
