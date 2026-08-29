@@ -15,6 +15,10 @@ local function with_mocked_system(result, fn)
     calls[#calls + 1] = { cmd = cmd, opts = opts }
     return {
       wait = function()
+        if type(opts.stdout) == "function" and result.stdout ~= nil then
+          opts.stdout(nil, result.stdout)
+          opts.stdout(nil, nil)
+        end
         return result
       end,
     }
@@ -111,7 +115,7 @@ return {
     end,
   },
   {
-    name = "attach.incoming.extractor.extract_to_path runs notmuch argv and writes stdout",
+    name = "attach.incoming.extractor.extract_to_path runs notmuch argv and streams stdout",
     run = function()
       local extractor = require("notmuch.attach.incoming.extractor")
       local dir = H.tmpdir()
@@ -130,7 +134,8 @@ return {
           "--part=3",
           "id:msg1",
         }, calls[1].cmd)
-        H.same({ text = false }, calls[1].opts)
+        H.eq(false, calls[1].opts.text)
+        H.eq("function", type(calls[1].opts.stdout))
         H.eq("hello attachment", read_file(out))
       end)
     end,
@@ -142,13 +147,91 @@ return {
       local dir = H.tmpdir()
       local out = vim.fs.joinpath(dir, "out.txt")
 
-      with_mocked_system({ code = 1, stdout = "", stderr = "boom" }, function()
+      with_mocked_system({ code = 1, stdout = "partial", stderr = "boom" }, function()
         local saved, err = extractor.extract_to_path("msg1", 4, out)
 
         H.eq(nil, saved)
         H.contains(err, "boom")
         H.eq(0, vim.fn.filereadable(out))
+        H.same({}, vim.fn.glob(out .. ".tmp-*", false, true))
       end)
+    end,
+  },
+  {
+    name = "attach.incoming.extractor.extract_to_path preserves destination after failure",
+    run = function()
+      local extractor = require("notmuch.attach.incoming.extractor")
+      local dir = H.tmpdir()
+      local out = vim.fs.joinpath(dir, "out.txt")
+      H.write_file(out, "existing attachment")
+
+      with_mocked_system({ code = 1, stdout = "partial", stderr = "boom" }, function()
+        local saved, err = extractor.extract_to_path("msg1", 4, out)
+
+        H.eq(nil, saved)
+        H.contains(err, "boom")
+        H.eq("existing attachment", read_file(out))
+        H.same({}, vim.fn.glob(out .. ".tmp-*", false, true))
+      end)
+    end,
+  },
+  {
+    name = "attach.incoming.extractor.extract_to_path cleans up after write failures",
+    run = function()
+      local extractor = require("notmuch.attach.incoming.extractor")
+      local dir = H.tmpdir()
+      local out = vim.fs.joinpath(dir, "out.txt")
+      local old_fs_write = vim.uv.fs_write
+
+      vim.uv.fs_write = function()
+        return nil, "disk full"
+      end
+
+      local ok, test_err = pcall(function()
+        with_mocked_system({ code = 0, stdout = "attachment", stderr = "" }, function()
+          local saved, err = extractor.extract_to_path("msg1", 4, out)
+
+          H.eq(nil, saved)
+          H.contains(err, "disk full")
+          H.eq(0, vim.fn.filereadable(out))
+          H.same({}, vim.fn.glob(out .. ".tmp-*", false, true))
+        end)
+      end)
+
+      vim.uv.fs_write = old_fs_write
+      if not ok then
+        error(test_err, 0)
+      end
+    end,
+  },
+  {
+    name = "attach.incoming.extractor.extract_to_path cleans up after close failures",
+    run = function()
+      local extractor = require("notmuch.attach.incoming.extractor")
+      local dir = H.tmpdir()
+      local out = vim.fs.joinpath(dir, "out.txt")
+      local old_fs_close = vim.uv.fs_close
+
+      vim.uv.fs_close = function(fd)
+        old_fs_close(fd)
+        return nil, "close failed"
+      end
+
+      local ok, test_err = pcall(function()
+        with_mocked_system({ code = 0, stdout = "attachment", stderr = "" }, function()
+          local saved, err = extractor.extract_to_path("msg1", 4, out)
+
+          H.eq(nil, saved)
+          H.contains(err, "close failed")
+          H.eq(0, vim.fn.filereadable(out))
+          H.same({}, vim.fn.glob(out .. ".tmp-*", false, true))
+        end)
+      end)
+
+      vim.uv.fs_close = old_fs_close
+      if not ok then
+        error(test_err, 0)
+      end
     end,
   },
   {

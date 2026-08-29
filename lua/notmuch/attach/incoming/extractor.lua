@@ -54,6 +54,29 @@ local function ensure_parent_dir(path)
   return true
 end
 
+local function remove_file(path)
+  if path then
+    vim.uv.fs_unlink(path)
+  end
+end
+
+local function write_all(fd, data)
+  local offset = 1
+
+  while offset <= #data do
+    local written, err = vim.uv.fs_write(fd, data:sub(offset))
+    if not written then
+      return nil, err
+    end
+    if written == 0 then
+      return nil, "attachment write made no progress"
+    end
+    offset = offset + written
+  end
+
+  return true
+end
+
 -- -----------------------------------------------------------------------------
 -- PUBLIC FUNCTIONS
 -- -----------------------------------------------------------------------------
@@ -144,27 +167,73 @@ function E.extract_to_path(message_id, part_id, path, opts)
     return nil, err
   end
 
-  local result = vim
-    .system({
-      "notmuch",
-      "show",
-      "--exclude=false",
-      "--part=" .. tostring(part_id),
-      "id:" .. normalized_id,
-    }, { text = false })
-    :wait()
+  local temp_fd, temp_path = vim.uv.fs_mkstemp(path .. ".tmp-XXXXXX")
+  if not temp_fd then
+    return nil, "failed to create temporary extraction file: " .. tostring(temp_path)
+  end
 
+  local write_err
+  local system_ok, result = pcall(function()
+    return vim
+      .system({
+        "notmuch",
+        "show",
+        "--exclude=false",
+        "--part=" .. tostring(part_id),
+        "id:" .. normalized_id,
+      }, {
+        text = false,
+        stdout = function(read_err, data)
+          if read_err then
+            write_err = write_err or read_err
+          elseif data and data ~= "" and not write_err then
+            local written, err = write_all(temp_fd, data)
+            if not written then
+              write_err = err or "failed to write attachment"
+            end
+          end
+        end,
+      })
+      :wait()
+  end)
+
+  -- Close temporary file descriptor after streaming write operation is complete
+  local closed, close_err = vim.uv.fs_close(temp_fd)
+
+  -- Check for `vim.system()` errors (ie. `notmuch` fails to launch)
+  if not system_ok then
+    remove_file(temp_path)
+    return nil, "failed to run notmuch extraction: " .. tostring(result)
+  end
+
+  -- Check for write errors during stdout streaming to temp file
+  if write_err then
+    remove_file(temp_path)
+    return nil, "failed to write attachment: " .. tostring(write_err)
+  end
+
+  -- Check for error exit codes from the `vim.system()` call
   if result.code ~= 0 then
-    return nil, result.stderr or "notmuch extraction failed"
+    remove_file(temp_path)
+    local process_err = result.stderr
+    if not process_err or process_err == "" then
+      process_err = "notmuch extraction failed"
+    end
+    return nil, process_err
   end
 
-  local fd, open_err = io.open(path, "wb")
-  if not fd then
-    return nil, open_err
+  -- Check if temp file closed properly before we attempt renaming
+  if not closed then
+    remove_file(temp_path)
+    return nil, "failed to close attachment file: " .. tostring(close_err)
   end
 
-  fd:write(result.stdout or "")
-  fd:close()
+  -- Rename/move the temp file to the final cache path
+  local renamed, rename_err = vim.uv.fs_rename(temp_path, path)
+  if not renamed then
+    remove_file(temp_path)
+    return nil, "failed to finalize attachment: " .. tostring(rename_err)
+  end
 
   return path, nil
 end

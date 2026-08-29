@@ -183,6 +183,7 @@ function P.get_attachments_from_cursor_msg()
   -- If attachment buffer already exists, notify and return
   local bufnr = vim.fn.bufnr("id:" .. id)
   if bufnr ~= -1 then
+    -- TODO: why warn when we can just open the existing buffer again?
     vim.notify(
       "Attachment list for this msg is already open in buffer: " .. bufnr,
       vim.log.levels.WARN
