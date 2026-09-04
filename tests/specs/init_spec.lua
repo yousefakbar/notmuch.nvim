@@ -153,7 +153,7 @@ return {
           called_id = threadid
           return { "Rendered header", "id:m1 {{{", "body", "}}}", "" }, {
             thread = { id = threadid, subject = "Rendered subject" },
-            messages = { { id = "m1", start_line = 3, end_line = 6 } },
+            messages = { { id = "m1", start_line = 3, fold_line = 4, end_line = 6 } },
           }
         end
         thread.setup_cursor_tracking = function(buf)
@@ -188,8 +188,97 @@ return {
         }, H.current_lines())
         H.eq("abc123", vim.b.notmuch_thread.id)
         H.eq("m1", vim.b.notmuch_messages[1].id)
+        H.eq(4, vim.api.nvim_win_get_cursor(0)[1])
       end)
 
+      thread.show_thread = old_show_thread
+      thread.setup_cursor_tracking = old_setup_cursor_tracking
+      if not ok then
+        error(err, 0)
+      end
+    end,
+  },
+  {
+    name = "show_thread applies configured fold expansion synchronously",
+    run = function()
+      local nm = require("notmuch")
+      local config = require("notmuch.config")
+      local thread = require("notmuch.thread")
+      local old_mode = config.options.thread_auto_expand
+      local old_show_thread = thread.show_thread
+      local old_setup_cursor_tracking = thread.setup_cursor_tracking
+
+      local ok, err = pcall(function()
+        thread.show_thread = function(threadid)
+          return {
+            "First sender",
+            "id:first {{{",
+            "First body",
+            "}}}",
+            "",
+            "Second sender",
+            "id:second {{{",
+            "Second body",
+            "}}}",
+            "",
+          }, {
+            thread = { id = threadid },
+            messages = {
+              { id = "first", start_line = 3, fold_line = 4, end_line = 6 },
+              { id = "second", start_line = 8, fold_line = 9, end_line = 11 },
+            },
+          }
+        end
+        thread.setup_cursor_tracking = function() end
+
+        for _, case in ipairs({
+          { mode = "none", first_closed = 4, second_closed = 9 },
+          { mode = "first", first_closed = -1, second_closed = 9 },
+          { mode = "all", first_closed = -1, second_closed = -1 },
+        }) do
+          config.options.thread_auto_expand = case.mode
+          nm.show_thread("thread:expand" .. case.mode)
+          H.eq(4, vim.api.nvim_win_get_cursor(0)[1])
+          H.eq(case.first_closed, vim.fn.foldclosed(4))
+          H.eq(case.second_closed, vim.fn.foldclosed(9))
+
+          H.eq(true, nm.show_thread("thread:expand" .. case.mode))
+          H.eq(4, vim.api.nvim_win_get_cursor(0)[1])
+          H.eq(case.first_closed, vim.fn.foldclosed(4))
+          H.eq(case.second_closed, vim.fn.foldclosed(9))
+        end
+      end)
+
+      config.options.thread_auto_expand = old_mode
+      thread.show_thread = old_show_thread
+      thread.setup_cursor_tracking = old_setup_cursor_tracking
+      if not ok then
+        error(err, 0)
+      end
+    end,
+  },
+  {
+    name = "show_thread falls back to line one without message metadata",
+    run = function()
+      local nm = require("notmuch")
+      local config = require("notmuch.config")
+      local thread = require("notmuch.thread")
+      local old_mode = config.options.thread_auto_expand
+      local old_show_thread = thread.show_thread
+      local old_setup_cursor_tracking = thread.setup_cursor_tracking
+
+      local ok, err = pcall(function()
+        config.options.thread_auto_expand = "first"
+        thread.show_thread = function()
+          return { "Thread not found or empty" }, {}
+        end
+        thread.setup_cursor_tracking = function() end
+
+        H.eq(nil, nm.show_thread("thread:missing"))
+        H.eq(1, vim.api.nvim_win_get_cursor(0)[1])
+      end)
+
+      config.options.thread_auto_expand = old_mode
       thread.show_thread = old_show_thread
       thread.setup_cursor_tracking = old_setup_cursor_tracking
       if not ok then
@@ -204,8 +293,11 @@ return {
       local id = H.first_thread_id("tag:inbox")
       nm.show_thread("thread:" .. id)
       local first = vim.api.nvim_get_current_buf()
+      local first_fold_line = vim.b.notmuch_messages[1].fold_line
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
       nm.show_thread("thread:" .. id)
       H.eq(first, vim.api.nvim_get_current_buf())
+      H.eq(first_fold_line, vim.api.nvim_win_get_cursor(0)[1])
 
       local buf = vim.api.nvim_create_buf(true, true)
       vim.api.nvim_win_set_buf(0, buf)

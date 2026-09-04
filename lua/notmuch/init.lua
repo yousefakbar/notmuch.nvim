@@ -171,6 +171,29 @@ nm.reverse_sort_threads = function()
   vim.bo.modifiable = false
 end
 
+--- Position the cursor on the first message and apply the configured fold policy.
+local function apply_thread_open_behavior()
+  local messages = vim.b.notmuch_messages
+  local first_msg = messages and messages[1]
+  local fold_line = first_msg and first_msg.fold_line
+  local line_count = v.nvim_buf_line_count(0)
+  local has_valid_fold = type(fold_line) == "number" and fold_line >= 1 and fold_line <= line_count
+  local position = has_valid_fold and fold_line or 1
+
+  v.nvim_win_set_cursor(0, { position, 0 })
+
+  if not has_valid_fold then
+    return
+  end
+
+  local mode = config.options.thread_auto_expand
+  if mode == "first" and vim.fn.foldclosed(position) ~= -1 then
+    vim.cmd("normal! zo")
+  elseif mode == "all" then
+    vim.cmd("normal! zR")
+  end
+end
+
 --- Opens a thread in the mail view with all messages in the thread
 --
 -- This function fetches all the messages in the input thread's ID from the
@@ -202,6 +225,7 @@ nm.show_thread = function(s)
   local bufno = vim.fn.bufnr("thread:" .. threadid)
   if bufno ~= -1 then
     v.nvim_win_set_buf(0, bufno)
+    apply_thread_open_behavior()
     return true
   end
   local buf = v.nvim_create_buf(true, true)
@@ -221,11 +245,11 @@ nm.show_thread = function(s)
     "Hints: <Enter>: Toggle fold message | <Tab>: Next message | <S-Tab>: Prev message | q: Close | a: See attachment parts"
   v.nvim_buf_set_lines(buf, 0, 0, false, { hint_text, "" })
 
-  -- Place cursor at head of buffer and prepare display and disable modification
+  -- Prepare display, disable modification, and apply initial thread behavior
   v.nvim_buf_set_lines(buf, -2, -1, true, {})
-  v.nvim_win_set_cursor(0, { 1, 0 })
   vim.bo.filetype = "mail"
   vim.bo.modifiable = false
+  apply_thread_open_behavior()
 
   -- Set up cursor tracking for updating vim.b.notmuch_current
   require("notmuch.thread").setup_cursor_tracking(buf)

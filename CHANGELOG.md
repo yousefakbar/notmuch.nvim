@@ -14,9 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rule-based received attachment configuration for cache-backed open/view behavior:
   - `attachments.open`, `attachments.view`, `attachments.window`, and `attachments.cache_dir` provide the primary user-facing shorthand
   - `attach.incoming.open.rules` and `attach.incoming.view.rules` remain available as the advanced rule patch API
+- New `thread_auto_expand` config option for opening no message folds, the first fold, or all folds when entering a thread
 
 ### Changed
 
+- Thread buffers now place the cursor on the first message when opened or reused
 - Replaced deprecated `vim.loop` usage with `vim.uv` for Neovim libuv APIs.
 - Received attachment open/view actions now use deterministic cache extraction and rule registries instead of top-level handler callbacks.
 - Received attachment open, view, and save extraction now streams through temporary files and atomically publishes completed files.

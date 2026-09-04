@@ -67,6 +67,7 @@ C.defaults = function()
     suppress_deprecation_warning = false, -- Used for API deprecation warning suppression
     render_html_body = false, -- True means prioritize displaying rendered HTML
     thread_view_mode = "threaded", -- "threaded" | "newest-first" | "oldest-first" - Thread view display mode
+    thread_auto_expand = "none", -- "none" | "first" | "all"
     drafts = {
       folder = vim.fs.joinpath(vim.fn.stdpath("data"), "notmuch.nvim", "drafts"),
       delete_sent = false,
@@ -189,6 +190,15 @@ C.setup = function(opts)
   end
 
   C.options = vim.tbl_deep_extend("force", defaults, options)
+
+  local valid_thread_auto_expand = { none = true, first = true, all = true }
+  if not valid_thread_auto_expand[C.options.thread_auto_expand] then
+    vim.notify(
+      "notmuch.nvim: invalid thread_auto_expand; falling back to 'none'",
+      vim.log.levels.WARN
+    )
+    C.options.thread_auto_expand = "none"
+  end
 
   -- If `attach.incoming.cache_dir` is set by user, expand it
   if C.options.attach and C.options.attach.incoming and C.options.attach.incoming.cache_dir then

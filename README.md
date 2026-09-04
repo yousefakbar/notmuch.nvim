@@ -147,6 +147,7 @@ You can configure several global options to tailor the plugin's behavior:
 | `attach.incoming.*` | Advanced received attachment rule patch API | See below |
 | `render_html_body` | Render HTML email bodies inline using `w3m` (requires `w3m` installed)          | `false`                         |
 | `thread_view_mode` | Thread view mode: `"threaded"`, `"newest-first"`, or `"oldest-first"`        | `"threaded"`                   |
+| `thread_auto_expand` | Initial thread expansion: `"none"`, `"first"`, or `"all"` | `"none"` |
 | `drafts.folder` | Directory used for persistent compose/reply draft `.eml` files and JSON metadata | `stdpath("data")/notmuch.nvim/drafts` |
 | `drafts.delete_sent` | Delete the persistent draft after a successful send instead of marking it sent | `false` |
 | `drafts.show_sent_drafts` | Include sent drafts in draft pickers | `false` |
@@ -185,6 +186,7 @@ Example configuration in plugin manager (lazy.nvim):
             { name = "⌛ Overdue (+3d)", query = "tag:inbox and date:..3d" },
         },
         thread_view_mode = "threaded", -- OR "newest-first" OR "oldest-first"
+        thread_auto_expand = "none", -- OR "first" OR "all"
     },
 },
 ```

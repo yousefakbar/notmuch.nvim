@@ -46,6 +46,7 @@ return {
         H.eq(vim.fn.expand("~/custom-db"), config.options.notmuch_db_path)
         H.eq("User <user@localhost>", config.options.from)
         H.eq("background", config.options.sync.sync_mode)
+        H.eq("none", config.options.thread_auto_expand)
         H.eq(true, config.options.drafts.auto_open_attachment_window)
         H.eq("<F5>", config.options.keymaps.sendmail)
         H.eq("<C-g><C-a>", config.options.keymaps.attachment_window)
@@ -68,6 +69,34 @@ return {
         H.eq(true, config.setup({}))
         H.eq(false, config.options.drafts.auto_open_attachment_window)
       end)
+    end,
+  },
+  {
+    name = "config.setup validates thread auto-expand mode",
+    run = function()
+      local config = require("notmuch.config")
+      local notes = {}
+      local old_notify = vim.notify
+      vim.notify = function(msg, level)
+        table.insert(notes, { msg = msg, level = level })
+      end
+
+      with_mocked_notmuch_config({
+        ["database.path"] = "/tmp/notmuch-db",
+        ["user.name"] = "Tester",
+        ["user.primary_email"] = "tester@example.com",
+      }, function()
+        H.eq(true, config.setup({ thread_auto_expand = "all" }))
+        H.eq("all", config.options.thread_auto_expand)
+
+        H.eq(true, config.setup({ thread_auto_expand = "invalid" }))
+        H.eq("none", config.options.thread_auto_expand)
+      end)
+
+      H.eq(1, #notes)
+      H.contains(notes[1].msg, "invalid thread_auto_expand")
+      H.eq(vim.log.levels.WARN, notes[1].level)
+      vim.notify = old_notify
     end,
   },
   {

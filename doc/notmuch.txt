@@ -525,6 +525,31 @@ option will be listed with its default value.
     })
 <
 
+*thread_auto_expand*
+  Controls which message folds are opened when entering a thread. The cursor
+  is always positioned on the first message, regardless of this setting.
+
+  - `"none"` (default):
+    Keep the current fold state.
+
+  - `"first"`:
+    Open the first message fold.
+
+  - `"all"`:
+    Open every message fold.
+
+  Invalid values produce a warning and fall back to `"none"`.
+
+  Default value:
+    `"none"`
+
+  Example: >
+
+    require('notmuch').setup({
+      thread_auto_expand = "first",
+    })
+<
+
 *suppress_deprecation_warning*
   Controls whether the plugin shows a warning notification when the installed
   version of notmuch uses the deprecated `notmuch_database_open` API (versions
