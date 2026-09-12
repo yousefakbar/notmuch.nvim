@@ -31,6 +31,16 @@ local function attachment_buf(parts, name)
   return buf
 end
 
+local function with_system(mock, fn)
+  local old_system = vim.system
+  vim.system = mock
+  local ok, err = pcall(fn)
+  vim.system = old_system
+  if not ok then
+    error(err, 0)
+  end
+end
+
 local function with_save_extractor(mock, fn)
   local extractor = require("notmuch.attach.incoming.extractor")
   local old_save_to_path = extractor.save_to_path
@@ -57,8 +67,7 @@ return {
     name = "attach.parts.get_attachments_from_cursor_msg creates formatted attachment list buffer",
     run = function()
       local attach = require("notmuch.attach.parts")
-      local old_system = vim.fn.system
-      local command
+      local command, system_opts
       local json = {
         body = {
           {
@@ -89,42 +98,138 @@ return {
           },
         },
       }
-      vim.fn.system = function(cmd)
+      with_system(function(cmd, opts)
         command = cmd
-        return vim.json.encode(json)
-      end
+        system_opts = opts
+        return {
+          wait = function()
+            return { code = 0, stdout = vim.json.encode(json), stderr = "" }
+          end,
+        }
+      end, function()
+        with_current_message_id("msg1", function()
+          attach.get_attachments_from_cursor_msg()
+        end)
 
-      with_current_message_id("msg1", function()
-        attach.get_attachments_from_cursor_msg()
+        H.eq("id:msg1", vim.api.nvim_buf_get_name(0):match("([^/]+)$"))
+        H.eq("nofile", vim.bo.buftype)
+        H.eq("notmuch-attach", vim.bo.filetype)
+        H.eq(false, vim.bo.modifiable)
+        H.same({
+          "notmuch",
+          "show",
+          "--exclude=false",
+          "--part=0",
+          "--format=json",
+          "id:msg1",
+        }, command)
+        H.same({ text = true }, system_opts)
+
+        local parts = vim.api.nvim_buf_get_var(0, "mime_parts_list")
+        H.eq(4, #parts)
+        H.eq(1, parts[1].id)
+        H.eq("inline", parts[1].disposition)
+        H.eq(3, parts[2].id)
+        H.eq("text/html", parts[2].content_type)
+        H.eq(4, parts[3].id)
+        H.eq("doc.pdf", parts[3].filename)
+        H.eq(5, parts[4].id)
+        H.eq("attachment", parts[4].disposition)
+
+        local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        H.contains(lines, "Hints: v: View")
+        H.contains(lines, "?  ID")
+        H.contains(lines, "I  1     body (text/plain)")
+        H.contains(lines, "I  3     body (text/html)")
+        H.contains(lines, "A  4     doc.pdf")
+        H.contains(lines, "A  5     body (image/png)")
+
+        vim.api.nvim_buf_delete(0, { force = true })
+      end)
+    end,
+  },
+  {
+    name = "attach.parts.get_attachments_from_cursor_msg keeps untrusted message ids in one argv element",
+    run = function()
+      local attach = require("notmuch.attach.parts")
+      local malicious_id = [["msg';touch${IFS}/tmp/notmuch-nvim-poc;'"@example.com]]
+      local command
+      local json = {
+        body = {
+          { id = 1, ["content-type"] = "text/plain", ["content-length"] = 4 },
+        },
+      }
+
+      with_system(function(cmd)
+        command = cmd
+        return {
+          wait = function()
+            return { code = 0, stdout = vim.json.encode(json), stderr = "" }
+          end,
+        }
+      end, function()
+        with_current_message_id(malicious_id, function()
+          attach.get_attachments_from_cursor_msg()
+        end)
       end)
 
-      H.eq("id:msg1", vim.api.nvim_buf_get_name(0):match("([^/]+)$"))
-      H.eq("nofile", vim.bo.buftype)
-      H.eq("notmuch-attach", vim.bo.filetype)
-      H.eq(false, vim.bo.modifiable)
-      H.eq("notmuch show --exclude=false --part=0 --format=json 'id:msg1'", command)
-
-      local parts = vim.api.nvim_buf_get_var(0, "mime_parts_list")
-      H.eq(4, #parts)
-      H.eq(1, parts[1].id)
-      H.eq("inline", parts[1].disposition)
-      H.eq(3, parts[2].id)
-      H.eq("text/html", parts[2].content_type)
-      H.eq(4, parts[3].id)
-      H.eq("doc.pdf", parts[3].filename)
-      H.eq(5, parts[4].id)
-      H.eq("attachment", parts[4].disposition)
-
-      local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
-      H.contains(lines, "Hints: v: View")
-      H.contains(lines, "?  ID")
-      H.contains(lines, "I  1     body (text/plain)")
-      H.contains(lines, "I  3     body (text/html)")
-      H.contains(lines, "A  4     doc.pdf")
-      H.contains(lines, "A  5     body (image/png)")
-
-      vim.fn.system = old_system
+      H.eq(6, #command)
+      H.eq("id:" .. malicious_id, command[6])
       vim.api.nvim_buf_delete(0, { force = true })
+    end,
+  },
+  {
+    name = "attach.parts.get_attachments_from_cursor_msg reports process and JSON failures",
+    run = function()
+      local attach = require("notmuch.attach.parts")
+      local start_buf = vim.api.nvim_get_current_buf()
+      local start_wins = #vim.api.nvim_list_wins()
+      local old_notify = vim.notify
+      local notes = {}
+      vim.notify = function(msg, level)
+        notes[#notes + 1] = { msg = msg, level = level }
+      end
+
+      local ok, err = pcall(function()
+        with_system(function()
+          return {
+            wait = function()
+              return { code = 1, stdout = "", stderr = "notmuch failed" }
+            end,
+          }
+        end, function()
+          with_current_message_id("process-failure", function()
+            H.eq(nil, attach.get_attachments_from_cursor_msg())
+          end)
+        end)
+
+        H.contains(notes[#notes].msg, "notmuch failed")
+        H.eq(vim.log.levels.ERROR, notes[#notes].level)
+        H.eq(start_buf, vim.api.nvim_get_current_buf())
+        H.eq(start_wins, #vim.api.nvim_list_wins())
+
+        with_system(function()
+          return {
+            wait = function()
+              return { code = 0, stdout = "not-json", stderr = "" }
+            end,
+          }
+        end, function()
+          with_current_message_id("json-failure", function()
+            H.eq(nil, attach.get_attachments_from_cursor_msg())
+          end)
+        end)
+
+        H.contains(notes[#notes].msg, "Failed to parse")
+        H.eq(vim.log.levels.ERROR, notes[#notes].level)
+        H.eq(start_buf, vim.api.nvim_get_current_buf())
+        H.eq(start_wins, #vim.api.nvim_list_wins())
+      end)
+
+      vim.notify = old_notify
+      if not ok then
+        error(err, 0)
+      end
     end,
   },
   {

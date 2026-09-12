@@ -7,6 +7,11 @@ local function read_file(path)
   return data
 end
 
+local function permission_mode(path)
+  local stat = vim.uv.fs_stat(path)
+  return stat and bit.band(stat.mode, 511) or nil
+end
+
 local function with_mocked_system(result, fn)
   local old_system = vim.system
   local calls = {}
@@ -256,6 +261,96 @@ return {
     end,
   },
   {
+    name = "attach.incoming.extractor.extract_to_cache creates private directories and files",
+    run = function()
+      local extractor = require("notmuch.attach.incoming.extractor")
+      local cache_dir = vim.fs.joinpath(H.tmpdir(), "nested", "cache")
+      local part = { id = 2, filename = "doc.txt", content_type = "text/plain" }
+
+      with_mocked_system({ code = 0, stdout = "cached", stderr = "" }, function()
+        local path, err = extractor.extract_to_cache("msg1", part, { cache_dir = cache_dir })
+
+        H.ok(path)
+        H.eq(nil, err)
+        H.eq("cached", read_file(path))
+        if vim.fn.has("win32") == 0 then
+          H.eq(448, permission_mode(vim.fn.fnamemodify(path, ":h")))
+          H.eq(384, permission_mode(path))
+        end
+      end)
+    end,
+  },
+  {
+    name = "attach.incoming.extractor.extract_to_cache repairs existing cache directory permissions",
+    run = function()
+      if vim.fn.has("win32") == 1 then
+        return
+      end
+
+      local extractor = require("notmuch.attach.incoming.extractor")
+      local dir = H.tmpdir()
+      local part = { id = 2, filename = "doc.txt", content_type = "text/plain" }
+      local expected = assert(extractor.cache_path("msg1", part, { cache_dir = dir }))
+      local cache_parent = vim.fn.fnamemodify(expected, ":h")
+      vim.fn.mkdir(cache_parent, "p")
+      assert(vim.uv.fs_chmod(cache_parent, 493)) -- 0755
+      H.write_file(expected, "cached")
+
+      local old_system = vim.system
+      vim.system = function()
+        error("vim.system should not be called for cached extraction")
+      end
+
+      local ok, err = pcall(function()
+        local path, extract_err = extractor.extract_to_cache("msg1", part, { cache_dir = dir })
+        H.eq(expected, path)
+        H.eq(nil, extract_err)
+        H.eq(448, permission_mode(cache_parent))
+      end)
+
+      vim.system = old_system
+      if not ok then
+        error(err, 0)
+      end
+    end,
+  },
+  {
+    name = "attach.incoming.extractor.extract_to_cache reports permission hardening failures",
+    run = function()
+      if vim.fn.has("win32") == 1 then
+        return
+      end
+
+      local extractor = require("notmuch.attach.incoming.extractor")
+      local dir = H.tmpdir()
+      local part = { id = 2, filename = "doc.txt", content_type = "text/plain" }
+      local old_chmod = vim.uv.fs_chmod
+      local old_system = vim.system
+      local system_called = false
+
+      vim.uv.fs_chmod = function()
+        return nil, "permission denied"
+      end
+      vim.system = function()
+        system_called = true
+        error("vim.system should not run when cache permissions cannot be secured")
+      end
+
+      local ok, test_err = pcall(function()
+        local path, err = extractor.extract_to_cache("msg1", part, { cache_dir = dir })
+        H.eq(nil, path)
+        H.contains(err, "permission denied")
+        H.eq(false, system_called)
+      end)
+
+      vim.uv.fs_chmod = old_chmod
+      vim.system = old_system
+      if not ok then
+        error(test_err, 0)
+      end
+    end,
+  },
+  {
     name = "attach.incoming.extractor.extract_to_cache reuses existing cached files",
     run = function()
       local extractor = require("notmuch.attach.incoming.extractor")
@@ -312,6 +407,9 @@ return {
     run = function()
       local extractor = require("notmuch.attach.incoming.extractor")
       local dir = H.tmpdir()
+      if vim.fn.has("win32") == 0 then
+        assert(vim.uv.fs_chmod(dir, 493)) -- 0755
+      end
       local out = vim.fs.joinpath(dir, "saved.txt")
       local saved, err = extractor.save_to_path("msg1", nil, out)
 
@@ -331,6 +429,9 @@ return {
           "id:msg1",
         }, calls[1].cmd)
         H.eq("saved body", read_file(out))
+        if vim.fn.has("win32") == 0 then
+          H.eq(493, permission_mode(dir), "save_to_path must not chmod user directories")
+        end
       end)
     end,
   },

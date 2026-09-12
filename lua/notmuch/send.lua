@@ -32,6 +32,28 @@ local confirm_sendmail = function()
   end
 end
 
+---Create tempfile for the outgoing mail to be sent with private permissions
+---
+---@param label string Prefix to the temp file name
+---@return string|nil path Path to the created temp file, or nil if error
+---@return string|nil err Error message, or nil if success
+local function create_private_tempfile(label)
+  local template = vim.fn.tempname() .. "-" .. label .. "-XXXXXX"
+  local fd, path_or_err = vim.uv.fs_mkstemp(template)
+
+  if not fd then
+    return nil, "Failed to create temporary file: " .. tostring(path_or_err)
+  end
+
+  local closed, close_err = vim.uv.fs_close(fd)
+  if not closed then
+    vim.uv.fs_unlink(path_or_err)
+    return nil, "Failed to close temporary file: " .. tostring(close_err)
+  end
+
+  return path_or_err
+end
+
 local build_plain_msg_file = function(buf, output_filename)
   local main_lines = v.nvim_buf_get_lines(buf, 0, -1, false)
   local attributes, msg = m.get_msg_attributes(main_lines)
@@ -56,7 +78,12 @@ end
 local build_mime_msg_file = function(buf, attachment_paths, output_filename)
   local main_lines = v.nvim_buf_get_lines(buf, 0, -1, false)
   local attributes, msg = m.get_msg_attributes(main_lines)
-  local body_filename = vim.fn.tempname() .. "-notmuch-body.txt"
+
+  local body_filename, temp_err = create_private_tempfile("notmuch-body")
+  if not body_filename then
+    vim.notify(temp_err, vim.log.levels.ERROR)
+    return false
+  end
 
   local ok, err = pcall(function()
     local attachments = m.create_mime_attachments(attachment_paths)
@@ -101,8 +128,13 @@ local build_mime_msg_file = function(buf, attachment_paths, output_filename)
 end
 
 local build_send_file = function(buf, attachment_paths)
-  local send_filename = vim.fn.tempname() .. "-notmuch-send.eml"
   local ok
+
+  local send_filename, temp_err = create_private_tempfile("notmuch-send")
+  if not send_filename then
+    vim.notify(temp_err, vim.log.levels.ERROR)
+    return nil
+  end
 
   if #attachment_paths == 0 then
     ok = build_plain_msg_file(buf, send_filename)

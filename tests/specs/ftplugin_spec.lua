@@ -307,6 +307,8 @@ return {
       vim.cmd("runtime ftplugin/mail.lua")
       H.eq("marker", vim.wo.foldmethod)
       H.eq(0, vim.wo.foldlevel)
+      H.eq(nil, vim.api.nvim_buf_get_commands(thread, {}).FollowPatch)
+      H.eq(nil, map_rhs("n", "U", thread))
       H.eq("za", map_rhs("n", "<CR>", thread))
       H.eq("zj", map_rhs("n", "<Tab>", thread))
       H.eq("zk", map_rhs("n", "<S-Tab>", thread))

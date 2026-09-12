@@ -13,17 +13,6 @@ local thread = require("notmuch.thread")
 -- PRIVATE FUNCTIONS
 --------------------------------------------------------------------------------
 
-local function show_github_patch(link)
-  local buf = v.nvim_create_buf(true, true)
-  v.nvim_buf_set_name(buf, link)
-  v.nvim_win_set_buf(0, buf)
-  v.nvim_command("silent 0read! curl -Ls " .. link)
-  v.nvim_win_set_cursor(0, { 1, 0 })
-  v.nvim_buf_set_lines(buf, -2, -1, true, {})
-  vim.bo.filetype = "gitsendemail"
-  vim.bo.modifiable = false
-end
-
 --- Formats a list of MIME parts into display lines for the attachment buffer.
 --
 -- Creates a table of formatted strings with aligned columns showing:
@@ -191,18 +180,42 @@ function P.get_attachments_from_cursor_msg()
     return nil
   end
 
-  -- Create new attachment listing buffer (`notmuch-attach`)
-  v.nvim_command("belowright 8new")
-  v.nvim_buf_set_name(0, "id:" .. id)
-  vim.bo.buftype = "nofile"
+  -- Run notmuch show to get the JSON output in a safe process
+  local process = vim
+    .system({
+      "notmuch",
+      "show",
+      "--exclude=false",
+      "--part=0",
+      "--format=json",
+      "id:" .. id,
+    }, { text = true })
+    :wait()
 
-  -- Get all MIME parts from `msg` in JSON format
-  local result = vim.json.decode(
-    vim.fn.system("notmuch show --exclude=false --part=0 --format=json 'id:" .. id .. "'")
-  )
+  -- Report error if `notmuch show` failed
+  if process.code ~= 0 then
+    vim.notify(
+      "Failed to inspect message attachments: " .. (process.stderr or "notmuch show failed"),
+      vim.log.levels.ERROR
+    )
+    return nil
+  end
+
+  -- Decode json into lua variable
+  local ok, result = pcall(vim.json.decode, process.stdout or "")
+  if not ok then
+    vim.notify("Failed to parse message attachment data", vim.log.levels.ERROR)
+    return nil
+  end
+
   local parts_list = {}
   parse_mime_tree(result["body"][1], parts_list)
   local lines = format_part_line(parts_list)
+
+  -- Create new attachment listing buffer (`notmuch-attach`) only after loading succeeds
+  v.nvim_command("belowright 8new")
+  v.nvim_buf_set_name(0, "id:" .. id)
+  vim.bo.buftype = "nofile"
 
   -- Save MIME parts list to buffer local variable
   v.nvim_buf_set_var(0, "mime_parts_list", parts_list)
@@ -349,32 +362,6 @@ function P.view_attachment_part()
   local id = string.match(v.nvim_buf_get_name(0), "id:%C+")
   local rendered = require("notmuch.attach.incoming").view_part(part, id)
   return rendered
-end
-
-function P.get_urls_from_cursor_msg()
-  if vim.fn.exists(":YTerm") == 0 then
-    print("Can't launch URL selector (:YTerm command not found)")
-    return nil
-  end
-  local id = thread.get_current_message_id()
-  if id == nil then
-    return nil
-  end
-  v.nvim_command('YTerm "notmuch show id:' .. id .. ' | urlextract"')
-end
-
-function P.follow_github_patch(line)
-  -- https://github.com/neomutt/neomutt/pull/2774.patch
-  local link = string.match(line, "http[s]://github%.com/.+/.+/pull/%d+%.patch")
-  if link == nil then
-    return nil
-  end
-  local bufno = vim.fn.bufnr(link)
-  if bufno ~= -1 then
-    v.nvim_win_set_buf(0, bufno)
-  else
-    show_github_patch(link)
-  end
 end
 
 return P

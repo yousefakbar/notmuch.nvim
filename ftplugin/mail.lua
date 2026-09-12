@@ -27,14 +27,6 @@ if vim.startswith(vim.fs.basename(vim.api.nvim_buf_get_name(0)), "thread:") then
     force = true,
   })
 
-  vim.api.nvim_buf_create_user_command(0, "FollowPatch", function()
-    local line = vim.api.nvim_win_get_cursor(0)[1]
-    parts.follow_github_patch(line)
-  end, {
-    force = true,
-  })
-
-  vim.keymap.set("n", "U", parts.get_urls_from_cursor_msg, { buffer = true })
   vim.keymap.set("n", "<Tab>", "zj", { buffer = true, silent = true })
   vim.keymap.set("n", "<S-Tab>", "zk", { buffer = true, silent = true })
   vim.keymap.set("n", "<Enter>", "za", { buffer = true, silent = true })
