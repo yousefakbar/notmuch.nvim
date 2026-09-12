@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- Removed the unused `:FollowPatch` command and `U` URL-extraction mapping, including the optional `:YTerm`/`urlextract` integration.
 - Removed the unused internal `notmuch.float` module. Floating attachment viewing is handled directly by the attachment viewer.
 - Removed top-level received attachment `open_handler` and `view_handler` configuration callbacks in favor of `attachments.open`/`attachments.view` rules, with `attach.incoming.*` available for advanced patching.
 - Removed the legacy `lua/notmuch/handlers.lua` callback implementation.

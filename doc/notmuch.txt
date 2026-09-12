@@ -81,10 +81,6 @@ Here is a non-comprehensive list of features of notmuch.nvim:
 - Tagging threads/messages
   - Add, remove, or toggle one or more tags at once
   - Inspect all tags pertinent to thread/msg
-- GitHub compatibility features
-  - Follow pull request patches
-- Extract URLs with a script
-
 ------------------------------------------------------------------------------
 REQUIREMENTS                                             *notmuch-requirements*
 
@@ -916,7 +912,6 @@ plugin's project codebase.
 
   - **attach/parts.lua**:
     - Handles received-message MIME part listing/opening/viewing/saving.
-    - Supports extracting URLs from messages and following GitHub patch links.
 
   - **attach/incoming/**:
     - Rule-based received attachment subsystem.

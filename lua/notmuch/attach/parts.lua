@@ -13,17 +13,6 @@ local thread = require("notmuch.thread")
 -- PRIVATE FUNCTIONS
 --------------------------------------------------------------------------------
 
-local function show_github_patch(link)
-  local buf = v.nvim_create_buf(true, true)
-  v.nvim_buf_set_name(buf, link)
-  v.nvim_win_set_buf(0, buf)
-  v.nvim_command("silent 0read! curl -Ls " .. link)
-  v.nvim_win_set_cursor(0, { 1, 0 })
-  v.nvim_buf_set_lines(buf, -2, -1, true, {})
-  vim.bo.filetype = "gitsendemail"
-  vim.bo.modifiable = false
-end
-
 --- Formats a list of MIME parts into display lines for the attachment buffer.
 --
 -- Creates a table of formatted strings with aligned columns showing:
@@ -349,32 +338,6 @@ function P.view_attachment_part()
   local id = string.match(v.nvim_buf_get_name(0), "id:%C+")
   local rendered = require("notmuch.attach.incoming").view_part(part, id)
   return rendered
-end
-
-function P.get_urls_from_cursor_msg()
-  if vim.fn.exists(":YTerm") == 0 then
-    print("Can't launch URL selector (:YTerm command not found)")
-    return nil
-  end
-  local id = thread.get_current_message_id()
-  if id == nil then
-    return nil
-  end
-  v.nvim_command('YTerm "notmuch show id:' .. id .. ' | urlextract"')
-end
-
-function P.follow_github_patch(line)
-  -- https://github.com/neomutt/neomutt/pull/2774.patch
-  local link = string.match(line, "http[s]://github%.com/.+/.+/pull/%d+%.patch")
-  if link == nil then
-    return nil
-  end
-  local bufno = vim.fn.bufnr(link)
-  if bufno ~= -1 then
-    v.nvim_win_set_buf(0, bufno)
-  else
-    show_github_patch(link)
-  end
 end
 
 return P
