@@ -46,6 +46,24 @@ local function sanitize_component(value)
   return value
 end
 
+local PRIVATE_DIR_MODE = 448 -- 0700
+
+local function ensure_private_cache_dir(dir)
+  if vim.fn.mkdir(dir, "p", PRIVATE_DIR_MODE) == 0 and vim.fn.isdirectory(dir) == 0 then
+    return nil, "failed to create cache directory: " .. dir
+  end
+
+  -- Unix permission bits do not provide the same guarantees on Windows.
+  if vim.fn.has("win32") == 0 then
+    local secured, chmod_err = vim.uv.fs_chmod(dir, PRIVATE_DIR_MODE)
+    if not secured then
+      return nil, "failed to secure cache directory: " .. tostring(chmod_err)
+    end
+  end
+
+  return true
+end
+
 local function ensure_parent_dir(path)
   local dir = vim.fn.fnamemodify(path, ":h")
   if vim.fn.mkdir(dir, "p") == 0 and vim.fn.isdirectory(dir) == 0 then
@@ -132,6 +150,14 @@ function E.extract_to_cache(message_id, part, opts)
   local path, err = E.cache_path(message_id, part, opts)
   if not path then
     return nil, err
+  end
+
+  -- Cache paths have the form:
+  -- <cache-root>/<message-id-hash>/<part-id>-<filename>
+  local cache_parent = vim.fn.fnamemodify(path, ":h")
+  local secured, secure_err = ensure_private_cache_dir(cache_parent)
+  if not secured then
+    return nil, secure_err
   end
 
   if not opts.force and vim.fn.filereadable(path) == 1 then

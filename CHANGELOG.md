@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Restricted received-attachment cache directories to private `0700` permissions.
 - Created outgoing message and MIME-body temporary files with private `0600` permissions.
 - Prevented shell injection through untrusted message IDs when listing received-message MIME parts.
 
