@@ -9,6 +9,32 @@ local function map_callback(mode, lhs, buf)
   end
 end
 
+local function file_mode(path)
+  local stat = vim.uv.fs_stat(path)
+  return stat and bit.band(stat.mode, 511) or nil
+end
+
+local function assert_private_file(path)
+  if vim.fn.has("win32") == 0 then
+    H.eq(384, file_mode(path), "expected private file permissions (0600)")
+  end
+end
+
+local function with_mime_builder_spy(spy, fn)
+  local mime = require("notmuch.mime")
+  local old_make_mime_msg = mime.make_mime_msg
+  mime.make_mime_msg = function(mime_table)
+    spy(mime_table)
+    return old_make_mime_msg(mime_table)
+  end
+
+  local ok, err = pcall(fn)
+  mime.make_mime_msg = old_make_mime_msg
+  if not ok then
+    error(err, 0)
+  end
+end
+
 local function with_send_env(fn)
   local send = require("notmuch.send")
   local config = require("notmuch.config")
@@ -179,7 +205,8 @@ return {
         map_callback("n", config.options.keymaps.sendmail, main_buf)()
 
         H.eq(1, #state.sent)
-        H.matches(state.sent[1], "%-notmuch%-send%.eml$")
+        H.matches(state.sent[1], "%-notmuch%-send%-%w%w%w%w%w%w$")
+        assert_private_file(state.sent[1])
         local sent_lines = vim.fn.readfile(state.sent[1])
         H.contains(sent_lines, "From: Sender Name <sender@example.com>")
         H.contains(sent_lines, "To: plain@example.com")
@@ -204,6 +231,8 @@ return {
     run = function()
       with_send_env(function(state, send, config)
         local attachment = H.write_file(state.dir .. "/attachment.txt", "attached text\n")
+        local body_filename
+        local body_mode
         send.sendmail = function(path)
           table.insert(state.sent, path)
           return true
@@ -212,28 +241,42 @@ return {
           return 1
         end
 
-        send.compose("mime@example.com")
-        local main_buf = vim.api.nvim_get_current_buf()
-        vim.api.nvim_buf_set_lines(main_buf, 5, -1, false, { "Hello MIME body" })
+        with_mime_builder_spy(function(mime_table)
+          if mime_table.mime then
+            body_filename = mime_table.mime[1].file
+            body_mode = file_mode(body_filename)
+          end
+        end, function()
+          send.compose("mime@example.com")
+          local main_buf = vim.api.nvim_get_current_buf()
+          vim.api.nvim_buf_set_lines(main_buf, 5, -1, false, { "Hello MIME body" })
 
-        map_callback("n", config.options.keymaps.attachment_window, main_buf)()
-        local attach_buf = vim.api.nvim_get_current_buf()
-        vim.api.nvim_buf_set_lines(attach_buf, 0, -1, false, { attachment })
-        vim.api.nvim_set_current_buf(main_buf)
+          map_callback("n", config.options.keymaps.attachment_window, main_buf)()
+          local attach_buf = vim.api.nvim_get_current_buf()
+          vim.api.nvim_buf_set_lines(attach_buf, 0, -1, false, { attachment })
+          vim.api.nvim_set_current_buf(main_buf)
 
-        map_callback("n", config.options.keymaps.sendmail, main_buf)()
+          map_callback("n", config.options.keymaps.sendmail, main_buf)()
 
-        H.eq(1, #state.sent)
-        H.matches(state.sent[1], "%-notmuch%-send%.eml$")
-        local text = table.concat(vim.fn.readfile(state.sent[1]), "\n")
-        H.contains(text, "From: Sender Name <sender@example.com>")
-        H.contains(text, "To: mime@example.com")
-        H.contains(text, "Content-Type: multipart/mixed")
-        H.contains(text, 'Content-Disposition: attachment; filename="attachment.txt"')
-        H.contains(text, "Hello MIME body")
-        local metadata =
-          require("notmuch.draft").read_metadata(vim.b[main_buf].notmuch_draft_json_path)
-        H.same({ attachment }, metadata.attachments)
+          H.eq(1, #state.sent)
+          H.matches(state.sent[1], "%-notmuch%-send%-%w%w%w%w%w%w$")
+          assert_private_file(state.sent[1])
+          local text = table.concat(vim.fn.readfile(state.sent[1]), "\n")
+          H.contains(text, "From: Sender Name <sender@example.com>")
+          H.contains(text, "To: mime@example.com")
+          H.contains(text, "Content-Type: multipart/mixed")
+          H.contains(text, 'Content-Disposition: attachment; filename="attachment.txt"')
+          H.contains(text, "Hello MIME body")
+          local metadata =
+            require("notmuch.draft").read_metadata(vim.b[main_buf].notmuch_draft_json_path)
+          H.same({ attachment }, metadata.attachments)
+        end)
+
+        H.ok(body_filename, "expected MIME body temporary file")
+        if vim.fn.has("win32") == 0 then
+          H.eq(384, body_mode, "expected private MIME body permissions (0600)")
+        end
+        H.eq(nil, vim.uv.fs_stat(body_filename), "MIME body temporary file was not deleted")
       end)
     end,
   },
@@ -349,7 +392,8 @@ return {
           "Plain reply body",
         })
         map_callback("n", config.options.keymaps.sendmail, plain_buf)()
-        H.matches(state.sent[#state.sent], "%-notmuch%-send%.eml$")
+        H.matches(state.sent[#state.sent], "%-notmuch%-send%-%w%w%w%w%w%w$")
+        assert_private_file(state.sent[#state.sent])
         H.contains(vim.fn.readfile(state.sent[#state.sent]), "MIME-Version: 1.0")
 
         thread.get_current_message_id = function()
@@ -370,7 +414,8 @@ return {
         vim.api.nvim_buf_set_lines(attach_buf, 0, -1, false, { attachment })
         vim.api.nvim_set_current_buf(mime_buf)
         map_callback("n", config.options.keymaps.sendmail, mime_buf)()
-        H.matches(state.sent[#state.sent], "%-notmuch%-send%.eml$")
+        H.matches(state.sent[#state.sent], "%-notmuch%-send%-%w%w%w%w%w%w$")
+        assert_private_file(state.sent[#state.sent])
         local text = table.concat(vim.fn.readfile(state.sent[#state.sent]), "\n")
         H.contains(text, "Content-Type: multipart/mixed")
         H.contains(text, 'Content-Disposition: attachment; filename="reply-attachment.txt"')
