@@ -180,18 +180,42 @@ function P.get_attachments_from_cursor_msg()
     return nil
   end
 
-  -- Create new attachment listing buffer (`notmuch-attach`)
-  v.nvim_command("belowright 8new")
-  v.nvim_buf_set_name(0, "id:" .. id)
-  vim.bo.buftype = "nofile"
+  -- Run notmuch show to get the JSON output in a safe process
+  local process = vim
+    .system({
+      "notmuch",
+      "show",
+      "--exclude=false",
+      "--part=0",
+      "--format=json",
+      "id:" .. id,
+    }, { text = true })
+    :wait()
 
-  -- Get all MIME parts from `msg` in JSON format
-  local result = vim.json.decode(
-    vim.fn.system("notmuch show --exclude=false --part=0 --format=json 'id:" .. id .. "'")
-  )
+  -- Report error if `notmuch show` failed
+  if process.code ~= 0 then
+    vim.notify(
+      "Failed to inspect message attachments: " .. (process.stderr or "notmuch show failed"),
+      vim.log.levels.ERROR
+    )
+    return nil
+  end
+
+  -- Decode json into lua variable
+  local ok, result = pcall(vim.json.decode, process.stdout or "")
+  if not ok then
+    vim.notify("Failed to parse message attachment data", vim.log.levels.ERROR)
+    return nil
+  end
+
   local parts_list = {}
   parse_mime_tree(result["body"][1], parts_list)
   local lines = format_part_line(parts_list)
+
+  -- Create new attachment listing buffer (`notmuch-attach`) only after loading succeeds
+  v.nvim_command("belowright 8new")
+  v.nvim_buf_set_name(0, "id:" .. id)
+  vim.bo.buftype = "nofile"
 
   -- Save MIME parts list to buffer local variable
   v.nvim_buf_set_var(0, "mime_parts_list", parts_list)

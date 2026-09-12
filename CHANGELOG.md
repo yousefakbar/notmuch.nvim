@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Received attachment open, view, and save extraction now streams through temporary files and atomically publishes completed files.
 - The default received attachment opener now prefers `vim.ui.open()` when available and falls back to the OS opener command.
 
+### Fixed
+
+- Prevented shell injection through untrusted message IDs when listing received-message MIME parts.
+
 ### Removed
 
 - Removed the unused `:FollowPatch` command and `U` URL-extraction mapping, including the optional `:YTerm`/`urlextract` integration.
