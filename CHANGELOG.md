@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-15
+
 ### Added
 
 - Added StyLua formatter configuration, Makefile format/lint targets, and a GitHub Actions formatting check.
@@ -23,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Received attachment open/view actions now use deterministic cache extraction and rule registries instead of top-level handler callbacks.
 - Received attachment open, view, and save extraction now streams through temporary files and atomically publishes completed files.
 - The default received attachment opener now prefers `vim.ui.open()` when available and falls back to the OS opener command.
+- Text attachment previews now detect filetypes with `vim.filetype.match()` using the attachment filename and contents.
 
 ### Fixed
 
@@ -34,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed the unused `:FollowPatch` command and `U` URL-extraction mapping, including the optional `:YTerm`/`urlextract` integration.
 - Removed the unused internal `notmuch.float` module. Floating attachment viewing is handled directly by the attachment viewer.
-- Removed top-level received attachment `open_handler` and `view_handler` configuration callbacks in favor of `attachments.open`/`attachments.view` rules, with `attach.incoming.*` available for advanced patching.
+- **BREAKING**: Removed top-level received attachment `open_handler` and `view_handler` configuration callbacks. Migrate custom handlers to `attachments.open` and `attachments.view` rules, or use `attach.incoming.*` for advanced rule patching.
 - Removed the legacy `lua/notmuch/handlers.lua` callback implementation.
 
 ## [0.4.0] - 2026-07-12
@@ -255,7 +258,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial (informal) baseline release.
 
-[Unreleased]: https://github.com/yousefakbar/notmuch.nvim/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/yousefakbar/notmuch.nvim/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/yousefakbar/notmuch.nvim/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/yousefakbar/notmuch.nvim/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/yousefakbar/notmuch.nvim/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/yousefakbar/notmuch.nvim/compare/v0.1.0...v0.2.0

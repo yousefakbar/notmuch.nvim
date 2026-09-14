@@ -369,8 +369,9 @@ option will be listed with its default value.
   Shorthand list of received attachment open rules. These rules are prepended to
   the default open rules, so they are tried before the built-in `system` rule.
   Rule fields are the same as |attach.incoming.open.rules| entries. The old
-  received attachment `open_handler` setup callback has been removed; configure
-  open rules here instead.
+  received attachment `open_handler` setup callback was removed in v0.5.0. This
+  is a breaking configuration change; migrate custom callbacks to open rules
+  here, or use |attach.incoming.open.rules| for advanced patching.
 
   Example customization: >
 
@@ -393,8 +394,9 @@ option will be listed with its default value.
   Shorthand list of received attachment view rules. These rules are prepended to
   the default view rules. Rule fields are the same as
   |attach.incoming.view.rules| entries. The old received attachment
-  `view_handler` setup callback has been removed; configure view rules here
-  instead.
+  `view_handler` setup callback was removed in v0.5.0. This is a breaking
+  configuration change; migrate custom callbacks to view rules here, or use
+  |attach.incoming.view.rules| for advanced patching.
 
   Example customization: >
 
@@ -436,8 +438,9 @@ option will be listed with its default value.
 *attach.incoming.view.rules*
   Advanced patch table for received attachment view rules. Default rules support
   HTML, PDF, images, Office documents, Markdown, archives, text, and binary
-  fallback previews. Rules are patched with `prepend`, `append`, `replace`, and
-  `disable`.
+  fallback previews. Text previews detect their filetype with
+  `vim.filetype.match()` using the attachment filename and contents. Rules are
+  patched with `prepend`, `append`, `replace`, and `disable`.
 
   Example replacing the PDF rule: >
 

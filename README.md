@@ -81,7 +81,7 @@ vim.pack.add({
 vim.pack.add({
   {
     src = 'https://github.com/yousefakbar/notmuch.nvim',
-    version = 'v0.3.0', -- Or git commit, etc.
+    version = 'v0.5.0', -- Or git commit, etc.
   },
 })
 ```
@@ -223,8 +223,10 @@ the user-selected path.
 
 For everyday customization, use the `attachments` shorthand. Rules listed in
 `attachments.open` and `attachments.view` are tried before the defaults. The old
-received attachment `open_handler` and `view_handler` setup callbacks have been
-removed; use open/view rules instead.
+received attachment `open_handler` and `view_handler` setup callbacks were
+removed in v0.5.0. This is a breaking configuration change: migrate custom
+callbacks to `attachments.open` and `attachments.view` rules, or use
+`attach.incoming.*` for advanced rule patching.
 
 ```lua
 require('notmuch').setup({
