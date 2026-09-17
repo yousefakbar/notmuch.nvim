@@ -46,8 +46,8 @@ local function with_mock_cnotmuch(state, fn)
   end
 end
 
-local function map_callback(lhs)
-  for _, map in ipairs(vim.api.nvim_buf_get_keymap(0, "n")) do
+local function map_callback(lhs, buf)
+  for _, map in ipairs(vim.api.nvim_buf_get_keymap(buf or 0, "n")) do
     if map.lhs == lhs then
       return map.callback
     end
@@ -59,6 +59,80 @@ local function silence_print(fn)
   print = function() end
   local ok, err = pcall(fn)
   print = old_print
+  if not ok then
+    error(err, 0)
+  end
+end
+
+local function with_purge_mocks(run)
+  local nm = require("notmuch")
+  local refresh = require("notmuch.refresh")
+  local old_search = nm.search_terms
+  local old_refresh = refresh.refresh_search_buffer
+  local old_system = vim.system
+  local old_unlink = vim.uv.fs_unlink
+  local old_confirm = vim.fn.confirm
+  local old_notify = vim.notify
+  local state = {
+    confirm = 2,
+    prompts = {},
+    searches = {},
+    systems = {},
+    unlinks = {},
+    notes = {},
+    refreshed = 0,
+  }
+
+  nm.search_terms = function(query)
+    state.searches[#state.searches + 1] = query
+  end
+  refresh.refresh_search_buffer = function()
+    state.refreshed = state.refreshed + 1
+  end
+  vim.system = function(argv, opts, callback)
+    state.systems[#state.systems + 1] = {
+      argv = vim.deepcopy(argv),
+      opts = opts,
+      callback = callback,
+    }
+    return {}
+  end
+  vim.uv.fs_unlink = function(path, callback)
+    state.unlinks[#state.unlinks + 1] = {
+      path = path,
+      callback = callback,
+    }
+  end
+  vim.fn.confirm = function(message, choices, default)
+    state.prompts[#state.prompts + 1] = {
+      message = message,
+      choices = choices,
+      default = default,
+    }
+    return state.confirm
+  end
+  vim.notify = function(message, level)
+    state.notes[#state.notes + 1] = { message = message, level = level }
+  end
+
+  state.complete_system = function(index, result)
+    state.systems[index].callback(result)
+    vim.wait(20)
+  end
+  state.complete_unlink = function(index, err)
+    state.unlinks[index].callback(err)
+    vim.wait(20)
+  end
+
+  local ok, err = pcall(run, state)
+
+  nm.search_terms = old_search
+  refresh.refresh_search_buffer = old_refresh
+  vim.system = old_system
+  vim.uv.fs_unlink = old_unlink
+  vim.fn.confirm = old_confirm
+  vim.notify = old_notify
+
   if not ok then
     error(err, 0)
   end
@@ -139,100 +213,173 @@ return {
     end,
   },
   {
-    name = "delete.purge_del searches deleted threads and No confirmation runs no shell commands",
+    name = "delete.purge_del uses tag:del, disarms DD, and cancellation deletes nothing",
     run = function()
-      local nm = require("notmuch")
-      local refresh = require("notmuch.refresh")
-      local delete = require("notmuch.delete")
-      local old_search = nm.search_terms
-      local old_refresh = refresh.refresh_search_buffer
-      local old_call_function = vim.api.nvim_call_function
-      local old_command = vim.api.nvim_command
-      local searched, refreshed = nil, false
-      local commands = {}
-      nm.search_terms = function(query)
-        searched = query
-      end
-      refresh.refresh_search_buffer = function()
-        refreshed = true
-      end
-      vim.api.nvim_call_function = function(name, args)
-        H.eq("confirm", name)
-        H.contains(args[1], "Purge deleted emails?")
-        return 2
-      end
-      vim.api.nvim_command = function(cmd)
-        commands[#commands + 1] = cmd
-      end
+      with_purge_mocks(function(state)
+        local delete = require("notmuch.delete")
+        local buf = vim.api.nvim_create_buf(true, true)
+        vim.api.nvim_win_set_buf(0, buf)
 
-      local buf = vim.api.nvim_create_buf(true, true)
-      vim.api.nvim_win_set_buf(0, buf)
-      delete.purge_del()
-      local cb = map_callback("DD")
-      H.ok(cb, "expected temporary DD purge keymap")
-      cb()
+        delete.purge_del()
+        local callback = map_callback("DD", buf)
+        H.ok(callback, "expected temporary DD purge keymap")
+        callback()
 
-      H.eq("tag:del and tag:/./", searched)
-      H.same({}, commands)
-      H.eq(false, refreshed)
-      H.eq(nil, map_callback("DD"))
+        H.same({ "tag:del" }, state.searches)
+        H.eq(nil, map_callback("DD", buf))
+        H.same(
+          { "notmuch", "search", "--output=files", "--format=text0", "tag:del" },
+          state.systems[1].argv
+        )
 
-      nm.search_terms = old_search
-      refresh.refresh_search_buffer = old_refresh
-      vim.api.nvim_call_function = old_call_function
-      vim.api.nvim_command = old_command
-      vim.api.nvim_buf_delete(buf, { force = true })
+        delete.purge_del()
+        H.same({ "tag:del" }, state.searches)
+        H.contains(state.notes[#state.notes].message, "already in progress")
+        H.eq(vim.log.levels.WARN, state.notes[#state.notes].level)
+
+        state.complete_system(1, {
+          code = 0,
+          stdout = "/mail/one\0/mail/two\0",
+          stderr = "",
+        })
+
+        H.eq(1, #state.prompts)
+        H.contains(state.prompts[1].message, "2 mail files")
+        H.eq(2, state.prompts[1].default)
+        H.eq(0, #state.unlinks)
+        H.eq(1, #state.systems)
+        H.eq(0, state.refreshed)
+
+        vim.api.nvim_buf_delete(buf, { force = true })
+      end)
     end,
   },
   {
-    name = "delete.purge_del Yes confirmation runs delete pipeline, reindexes, refreshes, and replaces keymap safely",
+    name = "delete.purge_del deduplicates paths, unlinks asynchronously, reindexes, and refreshes",
     run = function()
-      local nm = require("notmuch")
-      local refresh = require("notmuch.refresh")
-      local delete = require("notmuch.delete")
-      local old_search = nm.search_terms
-      local old_refresh = refresh.refresh_search_buffer
-      local old_call_function = vim.api.nvim_call_function
-      local old_command = vim.api.nvim_command
-      local searches, refreshed = {}, false
-      local commands = {}
-      nm.search_terms = function(query)
-        searches[#searches + 1] = query
-      end
-      refresh.refresh_search_buffer = function()
-        refreshed = true
-      end
-      vim.api.nvim_call_function = function()
-        return 1
-      end
-      vim.api.nvim_command = function(cmd)
-        commands[#commands + 1] = cmd
-      end
+      with_purge_mocks(function(state)
+        local delete = require("notmuch.delete")
+        local buf = vim.api.nvim_create_buf(true, true)
+        vim.api.nvim_win_set_buf(0, buf)
+        state.confirm = 1
 
-      local buf = vim.api.nvim_create_buf(true, true)
-      vim.api.nvim_win_set_buf(0, buf)
-      delete.purge_del()
-      local first_cb = map_callback("DD")
-      H.ok(first_cb, "expected DD keymap")
-      delete.purge_del()
-      local second_cb = map_callback("DD")
-      H.ok(second_cb, "expected DD keymap after reset")
-      H.ok(first_cb ~= second_cb, "expected purge_del to override temporary DD keymap")
-      second_cb()
+        delete.purge_del()
+        map_callback("DD", buf)()
+        state.complete_system(1, {
+          code = 0,
+          stdout = "/mail/one\0/mail/two\0/mail/one\0",
+          stderr = "",
+        })
 
-      H.same({ "tag:del and tag:/./", "tag:del and tag:/./" }, searches)
-      H.same({
-        "silent ! notmuch search --output=files --format=text0 tag:del and tag:/./ | xargs -0 rm",
-        "silent ! notmuch new",
-      }, commands)
-      H.eq(true, refreshed)
-      H.eq(nil, map_callback("DD"))
+        H.eq(2, #state.unlinks)
+        H.eq("/mail/one", state.unlinks[1].path)
+        H.eq("/mail/two", state.unlinks[2].path)
+        H.eq(1, #state.systems)
 
-      nm.search_terms = old_search
-      refresh.refresh_search_buffer = old_refresh
-      vim.api.nvim_call_function = old_call_function
-      vim.api.nvim_command = old_command
-      vim.api.nvim_buf_delete(buf, { force = true })
+        state.complete_unlink(1, nil)
+        H.eq(1, #state.systems)
+        state.complete_unlink(2, nil)
+        H.eq(2, #state.systems)
+        H.same({ "notmuch", "new" }, state.systems[2].argv)
+
+        state.complete_system(2, { code = 0, stdout = "", stderr = "" })
+        H.eq(1, state.refreshed)
+        H.contains(state.notes[#state.notes].message, "purged 2 mail files")
+        H.eq(vim.log.levels.INFO, state.notes[#state.notes].level)
+
+        vim.api.nvim_buf_delete(buf, { force = true })
+      end)
+    end,
+  },
+  {
+    name = "delete.purge_del stops safely when the notmuch file search fails",
+    run = function()
+      with_purge_mocks(function(state)
+        local delete = require("notmuch.delete")
+        local buf = vim.api.nvim_create_buf(true, true)
+        vim.api.nvim_win_set_buf(0, buf)
+
+        delete.purge_del()
+        map_callback("DD", buf)()
+        state.complete_system(1, { code = 2, stdout = "", stderr = "bad query" })
+
+        H.eq(0, #state.prompts)
+        H.eq(0, #state.unlinks)
+        H.eq(1, #state.systems)
+        H.eq(0, state.refreshed)
+        H.contains(state.notes[#state.notes].message, "bad query")
+        H.eq(vim.log.levels.ERROR, state.notes[#state.notes].level)
+
+        -- Failure must release the global guard so another purge can be armed.
+        delete.purge_del()
+        H.same({ "tag:del", "tag:del" }, state.searches)
+        H.ok(map_callback("DD", buf))
+
+        vim.api.nvim_buf_delete(buf, { force = true })
+      end)
+    end,
+  },
+  {
+    name = "delete.purge_del tracks missing and failed files and reports reindex failure",
+    run = function()
+      with_purge_mocks(function(state)
+        local delete = require("notmuch.delete")
+        local buf = vim.api.nvim_create_buf(true, true)
+        vim.api.nvim_win_set_buf(0, buf)
+        state.confirm = 1
+
+        delete.purge_del()
+        map_callback("DD", buf)()
+        state.complete_system(1, {
+          code = 0,
+          stdout = "/mail/deleted\0/mail/missing\0/mail/denied\0",
+          stderr = "",
+        })
+
+        state.complete_unlink(1, nil)
+        state.complete_unlink(2, "ENOENT: no such file or directory")
+        state.complete_unlink(3, "EACCES: permission denied")
+        H.same({ "notmuch", "new" }, state.systems[2].argv)
+
+        state.complete_system(2, { code = 1, stdout = "", stderr = "database locked" })
+        H.eq(0, state.refreshed)
+        H.contains(state.notes[#state.notes].message, "`notmuch new` failed")
+        H.contains(state.notes[#state.notes].message, "database locked")
+        H.eq(vim.log.levels.ERROR, state.notes[#state.notes].level)
+
+        vim.api.nvim_buf_delete(buf, { force = true })
+      end)
+    end,
+  },
+  {
+    name = "delete.purge_del never refreshes a different current buffer",
+    run = function()
+      with_purge_mocks(function(state)
+        local delete = require("notmuch.delete")
+        local origin = vim.api.nvim_create_buf(true, true)
+        vim.api.nvim_win_set_buf(0, origin)
+        state.confirm = 1
+
+        delete.purge_del()
+        map_callback("DD", origin)()
+        state.complete_system(1, {
+          code = 0,
+          stdout = "/mail/one\0",
+          stderr = "",
+        })
+        state.complete_unlink(1, nil)
+
+        local current = vim.api.nvim_create_buf(true, true)
+        vim.api.nvim_win_set_buf(0, current)
+        state.complete_system(2, { code = 0, stdout = "", stderr = "" })
+
+        H.eq(current, vim.api.nvim_get_current_buf())
+        H.eq(true, vim.api.nvim_buf_is_valid(current))
+        H.eq(false, vim.api.nvim_buf_is_valid(origin))
+        H.eq(0, state.refreshed)
+
+        vim.api.nvim_buf_delete(current, { force = true })
+      end)
     end,
   },
 }
