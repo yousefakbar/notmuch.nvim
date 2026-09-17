@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Modernized permanent mail purging:
+  - Replaced the shell-based pipeline with asynchronous `vim.system()` and `vim.uv.fs_unlink()` operations
+  - Added file-count confirmation and partial-failure reporting
+  - Added reindex validation and safe buffer lifecycle handling
+
 ## [0.5.0] - 2026-09-15
 
 ### Added
