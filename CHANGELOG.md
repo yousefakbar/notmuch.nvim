@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added `:checkhealth notmuch` diagnostics:
+  - Checks the Neovim version, required APIs, and LuaJIT FFI availability
+  - Locates the `notmuch` executable, reports its version, and verifies that `libnotmuch` can be loaded
+  - Validates the database path and metadata, runs a read-only query, detects CLI/plugin path mismatches, and checks the configured user identity
+  - Checks the optional `msmtp`, `mbsync`, and `w3m` integrations according to the active configuration
+
 ### Changed
 
 - Modernized permanent mail purging:
