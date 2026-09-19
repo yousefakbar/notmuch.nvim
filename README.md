@@ -128,6 +128,13 @@ Here are the core commands within Notmuch.nvim:
 
 - **`:NotmuchDrafts`**: Opens a global draft picker for compose and reply drafts.
 
+## Structured Search POC
+
+This branch has configurable, aligned JSON search results with semantic highlighting.
+See [the POC guide](doc/structured-search-poc.md) for column layouts, color customization,
+interactive experiments, and current limitations. Use `K` in search results for full
+metadata and `:NmSearchRedraw` to reflow after changing the layout.
+
 ## Configuration Options
 
 You can configure several global options to tailor the plugin's behavior:

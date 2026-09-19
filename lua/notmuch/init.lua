@@ -95,80 +95,21 @@ end
 ---@usage
 -- lua require('notmuch').search_terms('tag:inbox')
 nm.search_terms = function(search, jumptothreadid)
-  local num_threads_found = 0
   if search == "" then
     return nil
   elseif string.match(search, "^thread:%S+$") ~= nil then
     nm.show_thread(search)
     return true
   end
-  -- Use exact match for buffer name to avoid partial matches
-  -- Escape special regex characters in the search term
-  local escaped_search = vim.fn.escape(search, "^$.*~[]\\")
-  local bufno = vim.fn.bufnr("^" .. escaped_search .. "$")
-  if bufno ~= -1 then
-    -- Buffer exists, switch to it without refreshing
-    -- This preserves cursor position and navigation state
-    -- Users can press 'r' to explicitly refresh if needed
-    v.nvim_win_set_buf(0, bufno)
-    return true
-  end
-  local buf = v.nvim_create_buf(true, true)
-  v.nvim_buf_set_name(buf, search)
-  v.nvim_win_set_buf(0, buf)
-
-  local hint_text =
-    "Hints: <Enter>: Open thread | q: Close | r: Refresh | %: Sync maildir | a: Archive | A: Archive and Read | +/-/=: Add, remove, toggle tag | o: Sort | dd: Delete"
-  v.nvim_buf_set_lines(buf, 0, 2, false, { hint_text, "" })
-
-  -- Async notmuch search to make the UX non blocking
-  require("notmuch.async").run_notmuch_search(search, buf, function()
-    -- Check if buffer is still valid (might have been deleted during refresh)
-    if not v.nvim_buf_is_valid(buf) then
-      return
-    end
-    -- Completion logic
-    local line_count = v.nvim_buf_line_count(buf)
-    if line_count > 1 then
-      num_threads_found = line_count - 1
-    end
-    print("Found " .. num_threads_found .. " threads")
-    vim.fn.search(jumptothreadid)
-  end)
-
-  -- Set cursor at head of buffer, declare filetype, and disable modifying
-  v.nvim_win_set_cursor(0, { 1, 0 })
-  v.nvim_buf_set_lines(buf, -2, -1, true, {})
-  vim.bo.filetype = "notmuch-threads"
-  vim.bo.modifiable = false
+  return require("notmuch.search").open(search, jumptothreadid)
 end
 
 --- Reverses the threads sorting in `notmuch-threads` buffer
 --
--- This function reverses the lines of the `notmuch-threads` buffer which result
--- from the `search_terms()` function. It effectively toggles the sorting of
--- these threads between newest-first and oldest-first.
---
--- We do this instantly instead of running `notmuch search --sort` to save time
--- especially when it comes to large results with thousands of thread.
+-- Reverse structured records and rerender, keeping the selected thread ID.
+-- No additional Notmuch query is needed; the order persists across refresh.
 nm.reverse_sort_threads = function()
-  -- Get all lines, disregarding top-level hints line
-  local lines = v.nvim_buf_get_lines(0, 0, -1, false)
-  local hints = table.remove(lines, 1)
-
-  -- Reverse lines
-  local reversed = {}
-  for i = #lines, 1, -1 do
-    table.insert(reversed, lines[i])
-  end
-
-  -- Re-attach hints line
-  table.insert(reversed, 1, hints)
-
-  -- Replace lines in buffer
-  vim.bo.modifiable = true
-  v.nvim_buf_set_lines(0, 0, -1, false, reversed)
-  vim.bo.modifiable = false
+  require("notmuch.search").reverse()
 end
 
 --- Position the cursor on the first message and apply the configured fold policy.
@@ -199,26 +140,17 @@ end
 -- This function fetches all the messages in the input thread's ID from the
 -- notmuch database and displays them in the mail.vim view.
 --
----@param s? string Thread id/search-result line to extract the thread id from; defaults to the current line.
+---@param s? string Explicit thread:<id> query; omitted to use selected search metadata.
 ---@return true|nil reused_buffer True when an existing thread buffer was reused; nil otherwise.
 --
 ---@usage
 -- nm.show_thread("thread:00000000000003aa")
--- nm.show_thread(vim.api.nvim_get_current_line())
+-- nm.show_thread() -- selected structured search record
 nm.show_thread = function(s)
-  -- Fetch the threadid from the input `s` or from current line
-  local threadid = ""
-  if s == nil then
-    -- fetch from the current line since no input passed
-    local line = v.nvim_get_current_line()
-    if line:find("Hints:") == 1 then
-      -- Skip if selected the Hints line
-      print("Cannot open Hints :-)")
-      return nil
-    end
-    threadid = string.match(line, "[0-9a-z]+", 7)
-  else
-    threadid = string.match(s, "[0-9a-z]+", 7)
+  local record = s == nil and require("notmuch.search").get_record(0) or nil
+  local threadid = record and record.thread or (s and s:match("^thread:([0-9a-z]+)"))
+  if not threadid then
+    return nil
   end
 
   -- Open buffer if already exists, otherwise create new `buf`

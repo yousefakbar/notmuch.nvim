@@ -10,16 +10,13 @@ local function map_callback(mode, lhs, buf)
 end
 
 local function wait_for_thread_lines()
-  H.wait_until(function()
-    return table.concat(H.current_lines(), "\n"):find("thread:", 1, true)
-  end, 3000)
+  H.search_ready()
 end
 
 local function current_thread_id()
-  local line = vim.api.nvim_get_current_line()
-  local id = line:match("^thread:([0-9A-Za-z]+)")
-  H.ok(id, "expected current line to contain a thread id: " .. line)
-  return id
+  local record = require("notmuch.search").get_record(0)
+  H.ok(record, "expected current row to reference a thread")
+  return record.thread
 end
 
 local function notmuch_count(query)
@@ -46,14 +43,11 @@ return {
     run = function()
       vim.cmd("NmSearch tag:inbox")
 
-      H.wait_until(function()
-        local lines = H.current_lines()
-        return #lines > 1 and table.concat(lines, "\n"):find("thread:", 1, true)
-      end, 3000)
+      H.search_ready()
 
       H.eq("notmuch-threads", vim.bo.filetype)
       H.contains(H.current_lines(), "Hints:")
-      H.contains(H.current_lines(), "thread:")
+      H.ok(#require("notmuch.search").get_state().records > 0)
     end,
   },
   {
@@ -94,9 +88,9 @@ return {
 
       wait_for_thread_lines()
       H.eq("notmuch-threads", vim.bo.filetype)
-      H.eq("tag:inbox", vim.api.nvim_buf_get_name(0):match("([^/]+)$"))
+      H.eq("tag:inbox", vim.b.notmuch_search_query)
 
-      vim.api.nvim_win_set_cursor(0, { 2, 0 })
+      vim.api.nvim_win_set_cursor(0, { 3, 0 })
       require("notmuch").show_thread()
       H.eq("mail", vim.bo.filetype)
       H.ok(vim.b.notmuch_current, "expected current-message metadata")
@@ -116,14 +110,15 @@ return {
 
       require("notmuch.refresh").refresh_search_buffer()
       wait_for_thread_lines()
-      H.contains(vim.api.nvim_get_current_line(), selected)
+      H.eq(selected, current_thread_id())
 
       local before = H.current_lines()
       require("notmuch").reverse_sort_threads()
       local after = H.current_lines()
       H.eq(before[1], after[1])
-      H.eq(before[#before], after[2])
-      H.eq(before[2], after[#after])
+      H.eq(before[2], after[2])
+      H.eq(before[#before], after[3])
+      H.eq(before[3], after[#after])
     end,
   },
   {
@@ -133,10 +128,11 @@ return {
       local tag_name = "e2e-" .. tostring(vim.uv.hrtime())
       vim.cmd("NmSearch tag:inbox")
       wait_for_thread_lines()
-      vim.api.nvim_win_set_cursor(0, { 2, 0 })
+      vim.api.nvim_win_set_cursor(0, { 3, 0 })
       local thread_id = current_thread_id()
 
       vim.cmd("TagToggle " .. tag_name)
+      H.list_contains(require("notmuch.search").get_record(0).tags, tag_name)
       H.ok(
         notmuch_count("thread:" .. thread_id .. " and tag:" .. tag_name) > 0,
         "expected toggled thread tag"
@@ -198,7 +194,7 @@ return {
       local ok, err = pcall(function()
         vim.cmd("NmSearch tag:attachment")
         wait_for_thread_lines()
-        vim.api.nvim_win_set_cursor(0, { 2, 0 })
+        vim.api.nvim_win_set_cursor(0, { 3, 0 })
         nm.show_thread()
 
         local target

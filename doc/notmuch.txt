@@ -670,7 +670,7 @@ related to buffers:
 - *Buffer Naming* ~
   Buffers are named contextually for better organization:
   - Tags Buffer: `"Tags"`
-  - Threads Buffer: Matches the search query string.
+  - Threads Buffer: `notmuch-search: ` followed by the search query string.
   - Thread View Buffer: `"thread:"` followed by the thread ID.
   - Attachments Buffer: `"id:"` followed by the message ID.
 
@@ -678,11 +678,47 @@ These features leverage NeoVim's buffer system to deliver a seamless and
 efficient email management experience, making it easier to navigate and
 interact with your email directly from the editor.
 
+- *Structured Search Results (POC)* ~
+                                            *notmuch-search-columns*
+  Search runs asynchronously with JSON output. Results appear after the whole
+  response is received. Each row has structured metadata; IDs do not need to
+  be visible for opening, tagging, sorting, deleting, or refreshing.
+
+  Configure `search.show_header`, `search.separator`, and `search.columns`:
+>
+    search = {
+      show_header = true,
+      separator = '  ',
+      columns = {
+        { field = 'authors', width = 20 },
+        { field = 'subject', width = 'fill', min_width = 20 },
+        { field = 'tags', width = 'auto', max_width = 24 },
+      },
+    }
+<
+  Columns replace the default list. Available fields: date, timestamp, count,
+  matched, total, authors, subject, tags, thread. Optional label changes the
+  heading. Width is a positive integer, 'auto', or 'fill' (at most one fill
+  column); min_width/max_width constrain auto/fill. Align is left/right/center.
+  Optional highlight supplies a Neovim group. Semantic NotmuchSearch* groups
+  replace positional syntax highlighting; colors survive column reordering.
+
+  K opens full metadata in a copyable popup (q closes). / searches displayed
+  text, not truncated suffixes. :NmSearchRedraw reflows current options without
+  querying. Refresh keeps selection and old results on failure. Narrow windows
+  scroll horizontally; the narrowest visible window determines shared layout.
+
+  Large results can pause during decode/render in this POC. See the repository's
+  doc/structured-search-poc.md for examples, measurements, and limitations.
+
 - *Buffer-Local Variables* ~
                                             *notmuch-buffer-variables*
   Thread View buffers expose several buffer-local variables containing
   metadata about the current thread and messages. These can be used for
   statusline integration, custom keymaps, or other extensibility purposes.
+
+  Search buffers expose `vim.b.notmuch_search_query`,
+  `vim.b.notmuch_search_status`, and `vim.b.notmuch_search_count`.
 
   *vim.b.notmuch_thread*
     Table containing thread-level metadata:

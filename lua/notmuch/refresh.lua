@@ -4,20 +4,13 @@ local nm = require("notmuch")
 
 -- Refreshes the search results buffer
 --
--- This function refreshes the buffer showing the results of a search (list of
--- threads) by deleting the original buffer and re-invokes the `search_terms()`
--- function.
+-- Refresh the structured search snapshot in place, preserving query and selection.
 --
 ---@usage
 -- -- Normally invoked by pressing `r` in the search results buffer
 -- lua require('notmuch.refresh').refresh_search_buffer()
 r.refresh_search_buffer = function()
-  local line = v.nvim_get_current_line()
-  local threadid = string.match(line, "%S+", 8)
-  local search = string.match(v.nvim_buf_get_name(0), "%a+:%C+")
-  v.nvim_command("bwipeout")
-  nm.search_terms(search, threadid)
-  vim.fn.search(threadid)
+  require("notmuch.search").refresh()
 end
 
 -- Refreshes the thread view buffer

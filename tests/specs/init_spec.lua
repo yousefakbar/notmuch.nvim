@@ -75,13 +75,11 @@ return {
     run = function()
       local query = "tag:inbox and tag:unread"
       require("notmuch").search_terms(query)
-      H.wait_until(function()
-        return table.concat(H.current_lines(), "\n"):find("thread:", 1, true)
-      end, 3000)
+      H.search_ready()
       local first = vim.api.nvim_get_current_buf()
-      H.eq(query, buffer_basename())
+      H.eq("notmuch-search: " .. query, buffer_basename())
       H.eq(false, vim.bo.modifiable)
-      H.eq(1, vim.api.nvim_win_get_cursor(0)[1])
+      H.eq(3, vim.api.nvim_win_get_cursor(0)[1])
       vim.cmd("enew")
       H.eq(true, require("notmuch").search_terms(query))
       H.eq(first, vim.api.nvim_get_current_buf())
@@ -93,28 +91,18 @@ return {
       local query = "tag:inbox"
       local target = H.first_thread_id(query)
       require("notmuch").search_terms(query .. " and thread:" .. target, target)
-      H.wait_until(function()
-        return vim.api.nvim_get_current_line():find(target, 1, true)
-      end, 3000)
-      H.contains(vim.api.nvim_get_current_line(), target)
+      H.search_ready()
+      H.eq(target, require("notmuch.search").get_record(0).thread)
     end,
   },
   {
     name = "reverse_sort_threads preserves hints and reverses result lines",
     run = function()
-      local buf = vim.api.nvim_create_buf(true, true)
-      vim.api.nvim_win_set_buf(0, buf)
-      vim.bo.modifiable = true
-      vim.api.nvim_buf_set_lines(
-        buf,
-        0,
-        -1,
-        false,
-        { "Hints: keep", "thread:1", "thread:2", "thread:3" }
-      )
-      vim.bo.filetype = "notmuch-threads"
+      local buf = H.search_fixture({ "1", "2", "3" })
+      local before = H.current_lines()
       require("notmuch").reverse_sort_threads()
-      H.same({ "Hints: keep", "thread:3", "thread:2", "thread:1" }, H.current_lines())
+      H.same({ before[1], before[2], before[5], before[4], before[3] }, H.current_lines())
+      H.eq("3", require("notmuch.search").get_record(buf, 3).thread)
       H.eq(false, vim.bo.modifiable)
     end,
   },
@@ -122,20 +110,16 @@ return {
     name = "reverse_sort_threads handles empty and one-result buffers",
     run = function()
       local nm = require("notmuch")
-      local buf = vim.api.nvim_create_buf(true, true)
-      vim.api.nvim_win_set_buf(0, buf)
-      vim.bo.modifiable = true
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "Hints: keep" })
-      vim.bo.filetype = "notmuch-threads"
+      H.search_fixture({})
+      local before = H.current_lines()
       nm.reverse_sort_threads()
-      H.same({ "Hints: keep" }, H.current_lines())
+      H.same(before, H.current_lines())
       H.eq(false, vim.bo.modifiable)
 
-      vim.bo.modifiable = true
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "Hints: keep", "thread:only" })
-      vim.bo.modifiable = false
+      H.search_fixture({ "abc" })
+      before = H.current_lines()
       nm.reverse_sort_threads()
-      H.same({ "Hints: keep", "thread:only" }, H.current_lines())
+      H.same(before, H.current_lines())
       H.eq(false, vim.bo.modifiable)
     end,
   },
@@ -160,16 +144,8 @@ return {
           tracked_buf = buf
         end
 
-        local search_buf = vim.api.nvim_create_buf(true, true)
-        vim.api.nvim_win_set_buf(0, search_buf)
-        vim.api.nvim_buf_set_lines(
-          search_buf,
-          0,
-          -1,
-          false,
-          { "Hints: test", "thread:abc123 rendered subject" }
-        )
-        vim.api.nvim_win_set_cursor(0, { 2, 0 })
+        H.search_fixture({ "abc123" })
+        vim.api.nvim_win_set_cursor(0, { 3, 0 })
 
         H.eq(nil, nm.show_thread())
         local thread_buf = vim.api.nvim_get_current_buf()
