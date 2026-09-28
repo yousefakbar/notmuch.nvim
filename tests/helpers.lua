@@ -1,5 +1,29 @@
 local H = {}
 
+function H.search_fixture(ids)
+  local records = {}
+  for _, id in ipairs(ids) do
+    records[#records + 1] = {
+      thread = id,
+      timestamp = 1,
+      date_relative = "today",
+      matched = 1,
+      total = 1,
+      authors = "Author",
+      subject = "Subject " .. id,
+      tags = { "inbox" },
+    }
+  end
+  return require("notmuch.search").create("fixture-" .. tostring(vim.uv.hrtime()), records)
+end
+
+function H.search_ready()
+  H.wait_until(function()
+    local state = require("notmuch.search").get_state()
+    return state and state.status == "ready"
+  end, 3000)
+end
+
 function H.ok(value, msg)
   if not value then
     error(msg or "expected truthy value", 2)

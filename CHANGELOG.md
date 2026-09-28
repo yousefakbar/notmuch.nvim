@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Structured search results with configurable aligned columns (`search.columns`), semantic extmark highlights, `K` metadata details, and `:NmSearchRedraw`.
 - Added `:checkhealth notmuch` diagnostics:
   - Checks the Neovim version, required APIs, and LuaJIT FFI availability
   - Locates the `notmuch` executable, reports its version, and verifies that `libnotmuch` can be loaded
@@ -17,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Search results now use asynchronous JSON retrieval and metadata-backed opening, tagging, deletion, sorting, and in-place refresh; visible thread IDs are no longer required.
+- JSON search output is decoded and rendered in bounded batches, with initial results appearing progressively and auto-width columns finalized from the complete result set.
+- Refreshes preserve the previous snapshot until replacement results validate, restore the selected thread and viewport, and cancel superseded searches. Invalid partial initial results are discarded.
+- Search buffer names now use a `notmuch-search: ` prefix, and highlighting uses semantic `NotmuchSearch*` groups rather than positional regex groups.
 - Modernized permanent mail purging:
   - Replaced the shell-based pipeline with asynchronous `vim.system()` and `vim.uv.fs_unlink()` operations
   - Added file-count confirmation and partial-failure reporting

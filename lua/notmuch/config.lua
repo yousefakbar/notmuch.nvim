@@ -63,6 +63,7 @@ C.defaults = function()
       --   buffer: Structured async output in dedicated buffer, no stdin (default)
       --   terminal: Real PTY terminal with stdin support for GPG/OAuth prompts
     },
+    search = require("notmuch.search.options").defaults(),
     queries = {}, -- Saved/pinned search queries shown in dashboard above Tags (hidden when empty)
     suppress_deprecation_warning = false, -- Used for API deprecation warning suppression
     render_html_body = false, -- True means prioritize displaying rendered HTML
@@ -190,6 +191,7 @@ C.setup = function(opts)
   end
 
   C.options = vim.tbl_deep_extend("force", defaults, options)
+  C.options.search = require("notmuch.search.options").normalize(options.search)
 
   local valid_thread_auto_expand = { none = true, first = true, all = true }
   if not valid_thread_auto_expand[C.options.thread_auto_expand] then

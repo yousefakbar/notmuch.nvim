@@ -147,14 +147,7 @@ return {
         closed = 0,
         threads = { abc = t1, def = t2 },
       }
-      local buf = vim.api.nvim_create_buf(false, true)
-      vim.api.nvim_win_set_buf(0, buf)
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-        "Hints: ignore me",
-        "thread:abc  today [1/1] subject",
-        "not a thread line",
-        "thread:def  today [1/1] subject",
-      })
+      local buf = H.search_fixture({ "abc", "def" })
 
       with_mock_cnotmuch(state, function()
         silence_print(function()
@@ -164,10 +157,20 @@ return {
         end)
       end)
 
-      H.same(
-        { "thread:abc", "thread:def", "thread:abc", "thread:def", "thread:abc", "thread:def" },
-        state.queries
-      )
+      H.same({
+        "thread:abc",
+        "thread:abc",
+        "thread:def",
+        "thread:def",
+        "thread:abc",
+        "thread:abc",
+        "thread:def",
+        "thread:def",
+        "thread:abc",
+        "thread:abc",
+        "thread:def",
+        "thread:def",
+      }, state.queries)
       H.same({ "one", "two", "flagged" }, t1.added)
       H.same({ "old", "gone", "inbox" }, t1.removed)
       H.same({ "one", "two", "inbox", "flagged" }, t2.added)
@@ -184,10 +187,8 @@ return {
       local t1 = thread({})
       local state =
         { messages = {}, message_ids = {}, queries = {}, closed = 0, threads = { abc = t1 } }
-      local buf = vim.api.nvim_create_buf(false, true)
-      vim.api.nvim_win_set_buf(0, buf)
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "thread:abc  subject" })
-      vim.api.nvim_win_set_cursor(0, { 1, 0 })
+      local buf = H.search_fixture({ "abc" })
+      vim.api.nvim_win_set_cursor(0, { 3, 0 })
 
       with_mock_cnotmuch(state, function()
         silence_print(function()
@@ -196,7 +197,7 @@ return {
       end)
 
       H.same({ "current" }, t1.added)
-      H.same({ "thread:abc" }, state.queries)
+      H.same({ "thread:abc", "thread:abc" }, state.queries)
       H.eq(1, state.closed)
 
       vim.api.nvim_buf_delete(buf, { force = true })
@@ -222,19 +223,12 @@ return {
         },
       }
 
-      local buf = vim.api.nvim_create_buf(true, true)
-      vim.api.nvim_win_set_buf(0, buf)
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-        "thread:archive  subject",
-        "thread:archive_read  subject",
-        "thread:read  subject",
-        "thread:flag  subject",
-      })
+      local buf = H.search_fixture({ "archive", "archive_read", "read", "flag" })
       vim.bo.filetype = "notmuch-threads"
       vim.cmd("runtime ftplugin/notmuch-threads.lua")
 
       local function press(line, key)
-        vim.api.nvim_win_set_cursor(0, { line, 0 })
+        vim.api.nvim_win_set_cursor(0, { line + 2, 0 })
         local keys = vim.api.nvim_replace_termcodes(key, true, false, true)
         silence_print(function()
           vim.api.nvim_feedkeys(keys, "x", false)
@@ -254,8 +248,12 @@ return {
       H.same({ "flagged" }, flag.added)
       H.same({
         "thread:archive",
+        "thread:archive",
+        "thread:archive_read",
         "thread:archive_read",
         "thread:read",
+        "thread:read",
+        "thread:flag",
         "thread:flag",
       }, state.queries)
       H.eq(4, state.closed)
