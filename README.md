@@ -128,6 +128,13 @@ Here are the core commands within Notmuch.nvim:
 
 - **`:NotmuchDrafts`**: Opens a global draft picker for compose and reply drafts.
 
+## Structured Search
+
+Search results use structured JSON metadata and render progressively in configurable,
+aligned columns with semantic highlighting. Use `K` in search results for full metadata
+and `:NmSearchRedraw` to reflow after changing the layout. See
+`:help notmuch-search-columns` for configuration details.
+
 ## Configuration Options
 
 You can configure several global options to tailor the plugin's behavior:
@@ -138,6 +145,9 @@ You can configure several global options to tailor the plugin's behavior:
 | `maildir_sync_cmd` | Bash command to run for syncing maildir                                         | `mbsync -a`                     |
 | `sync.sync_mode`   | Sync display mode: `"buffer"`, `"background"`, or `"terminal"` (PTY with stdin) | `buffer`                        |
 | `send.send_mode`   | Send mode: `"terminal"` (PTY with stdin) or `"background"`                       | `terminal`                      |
+| `search.show_header` | Show column labels above structured search results | `true` |
+| `search.separator` | Text inserted between search columns | `"  "` |
+| `search.columns` | Ordered search column definitions; see `:help notmuch-search-columns` | Date, count, authors, subject, tags |
 | `queries`          | Saved/pinned queries shown at top of `:Notmuch` dashboard; hidden when empty    | `{}`                            |
 | `keymaps`          | Configure any (WIP) command's keymap                                            | See `config.lua`[1]             |
 | `attachments.cache_dir` | Shorthand for received attachment open/view cache directory | `stdpath("cache")/notmuch.nvim/attachments` |
@@ -178,6 +188,16 @@ Example configuration in plugin manager (lazy.nvim):
             delete_sent = false,
             show_sent_drafts = false,
             auto_open_attachment_window = false,
+        },
+        search = {
+            show_header = true,
+            separator = "  ",
+            columns = {
+                { field = "date", width = 12 },
+                { field = "authors", width = 24 },
+                { field = "subject", width = "fill", min_width = 20 },
+                { field = "tags", width = "auto", max_width = 30 },
+            },
         },
         render_html_body = true, -- Render HTML emails inline (requires w3m)
         queries = {

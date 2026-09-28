@@ -144,32 +144,24 @@ return {
     run = function()
       local t1 = fake_thread({ inbox = true })
       local state = { threads = { abc = t1 }, queries = {}, dbs = {}, closed = 0 }
-      local buf = vim.api.nvim_create_buf(true, true)
-      vim.api.nvim_win_set_buf(0, buf)
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-        "Hints: delete",
-        "thread:abc  today [1/1] subject",
-        "thread:def  today [1/1] other",
-      })
+      local buf = H.search_fixture({ "abc", "def" })
       vim.bo.filetype = "notmuch-threads"
       vim.cmd("runtime ftplugin/notmuch-threads.lua")
       vim.bo.modifiable = false
 
       with_mock_cnotmuch(state, function()
         silence_print(function()
-          vim.cmd("2DelThread")
+          vim.cmd("3DelThread")
         end)
       end)
 
       H.same({ "del" }, t1.added)
       H.same({ "inbox" }, t1.removed)
-      H.same(
-        { "Hints: delete", "thread:def  today [1/1] other" },
-        vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-      )
+      H.eq("def", require("notmuch.search").get_record(buf, 3).thread)
+      H.eq(3, vim.api.nvim_buf_line_count(buf))
       H.eq(false, vim.bo.modifiable)
       H.same({ "thread:abc", "thread:abc" }, state.queries)
-      H.eq(2, state.closed)
+      H.eq(1, state.closed)
 
       vim.api.nvim_buf_delete(buf, { force = true })
     end,
@@ -180,21 +172,14 @@ return {
       local t1 = fake_thread({ inbox = true })
       local t2 = fake_thread({ inbox = true })
       local state = { threads = { abc = t1, def = t2 }, queries = {}, dbs = {}, closed = 0 }
-      local buf = vim.api.nvim_create_buf(true, true)
-      vim.api.nvim_win_set_buf(0, buf)
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-        "Hints: delete",
-        "thread:abc  today [1/1] subject",
-        "thread:def  today [1/1] other",
-        "thread:ghi  today [1/1] keep",
-      })
+      local buf = H.search_fixture({ "abc", "def", "ghi" })
       vim.bo.filetype = "notmuch-threads"
       vim.cmd("runtime ftplugin/notmuch-threads.lua")
       vim.bo.modifiable = false
 
       with_mock_cnotmuch(state, function()
         silence_print(function()
-          vim.cmd("2,3DelThread")
+          vim.cmd("1,4DelThread") -- includes inert hints and header
         end)
       end)
 
@@ -202,12 +187,10 @@ return {
       H.same({ "del" }, t2.added)
       H.same({ "inbox" }, t1.removed)
       H.same({ "inbox" }, t2.removed)
-      H.same(
-        { "Hints: delete", "thread:ghi  today [1/1] keep" },
-        vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-      )
+      H.eq("ghi", require("notmuch.search").get_record(buf, 3).thread)
+      H.eq(3, vim.api.nvim_buf_line_count(buf))
       H.eq(false, vim.bo.modifiable)
-      H.eq(2, state.closed)
+      H.eq(1, state.closed)
 
       vim.api.nvim_buf_delete(buf, { force = true })
     end,

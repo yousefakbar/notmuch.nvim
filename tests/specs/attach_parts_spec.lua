@@ -152,7 +152,7 @@ return {
     name = "attach.parts.get_attachments_from_cursor_msg keeps untrusted message ids in one argv element",
     run = function()
       local attach = require("notmuch.attach.parts")
-      local malicious_id = [["msg';touch${IFS}/tmp/notmuch-nvim-poc;'"@example.com]]
+      local malicious_id = [["msg';touch${IFS}/tmp/notmuch-nvim-injection-test;'"@example.com]]
       local command
       local json = {
         body = {

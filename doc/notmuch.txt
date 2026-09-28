@@ -670,7 +670,7 @@ related to buffers:
 - *Buffer Naming* ~
   Buffers are named contextually for better organization:
   - Tags Buffer: `"Tags"`
-  - Threads Buffer: Matches the search query string.
+  - Threads Buffer: `notmuch-search: ` followed by the search query string.
   - Thread View Buffer: `"thread:"` followed by the thread ID.
   - Attachments Buffer: `"id:"` followed by the message ID.
 
@@ -678,11 +678,65 @@ These features leverage NeoVim's buffer system to deliver a seamless and
 efficient email management experience, making it easier to navigate and
 interact with your email directly from the editor.
 
+- *Structured Search Results* ~
+                                            *notmuch-search-columns*
+  Search runs asynchronously with JSON output. Initial results appear
+  progressively as validated records are received. Each row has structured
+  metadata; IDs do not need to be visible for opening, tagging, sorting,
+  deleting, or refreshing.
+
+  Configure `search.show_header`, `search.separator`, and `search.columns`.
+  The default layout is:
+>
+    search = {
+      show_header = true,
+      separator = '  ',
+      columns = {
+        { field = 'date', label = 'Date', width = 12 },
+        { field = 'count', label = 'Msgs', width = 7, align = 'right' },
+        { field = 'authors', label = 'Authors', width = 24 },
+        { field = 'subject', label = 'Subject', width = 'fill', min_width = 20 },
+        { field = 'tags', label = 'Tags', width = 30 },
+      },
+    }
+<
+  A configured columns list replaces the defaults. Available fields are date,
+  timestamp, count, matched, total, authors, subject, tags, and thread. Optional
+  label changes the heading. Width is a positive integer, 'auto', or 'fill' (at
+  most one fill column). min_width and max_width constrain auto/fill columns;
+  auto widths are measured from the completed result set. Align is left, right,
+  or center. Optional highlight supplies a Neovim highlight group.
+
+  Default semantic groups are NotmuchSearchHeader, NotmuchSearchDate,
+  NotmuchSearchCount, NotmuchSearchAuthors, NotmuchSearchAuthorsOther,
+  NotmuchSearchSubject, NotmuchSearchTags, NotmuchSearchThread,
+  NotmuchSearchHint, NotmuchSearchHintKey, NotmuchSearchStatus, and
+  NotmuchSearchError. User-defined highlight values and highlight overrides are
+  preserved across colorscheme changes.
+
+  K opens full metadata in a copyable popup (q closes). / searches displayed
+  text, not truncated suffixes. :NmSearchRedraw reflows current options without
+  querying. o reverses the current results and keeps that ordering on refresh;
+  reversing an active search restarts it with the corresponding Notmuch sort.
+
+  Initial results render progressively. Refresh keeps the previous snapshot
+  visible until the replacement has been fully validated, retaining it as stale
+  output if the search fails. Invalid partial initial results are discarded.
+  Superseded searches are cancelled, and completion restores the selected
+  thread and window viewport.
+
+  Narrow windows scroll horizontally; the narrowest visible window determines
+  the shared layout. Search output is decoded and rendered in bounded batches,
+  so the complete JSON response text is not retained in memory.
+
 - *Buffer-Local Variables* ~
                                             *notmuch-buffer-variables*
   Thread View buffers expose several buffer-local variables containing
   metadata about the current thread and messages. These can be used for
   statusline integration, custom keymaps, or other extensibility purposes.
+
+  Search buffers expose `vim.b.notmuch_search_query`,
+  `vim.b.notmuch_search_status`, and `vim.b.notmuch_search_count`.
 
   *vim.b.notmuch_thread*
     Table containing thread-level metadata:

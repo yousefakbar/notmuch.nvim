@@ -18,6 +18,7 @@ local spec_files = {
   "tests/specs/draft_spec.lua",
   "tests/specs/sync_spec.lua",
   "tests/specs/async_spec.lua",
+  "tests/specs/search_spec.lua",
   "tests/specs/send_spec.lua",
   "tests/specs/thread_spec.lua",
   "tests/specs/tag_spec.lua",

@@ -1,84 +1,139 @@
-local a = {}
+local M = {}
 
--- Runs `notmuch search` asynchronously
---
--- This function leverages the `vim.uv` library to spawn a subprocess and
--- asynchronously run the `notmuch` search query in the background so it does
--- not block `nvim`s event loop and allow seamless UX while results flow in
---
----@param search string Search terms to pass to `notmuch search`; see `notmuch-search-terms(7)`.
----@param buf integer Buffer id to stream search results into.
----@param on_complete fun() Callback invoked after the `notmuch search` process exits.
---
----@usage
--- -- Refer to `init.lua` for example invocation
--- require('notmuch.async').run_notmuch_search('tag:inbox', 0, function()
---   print('Notmuch search process completed.')
--- end)
-a.run_notmuch_search = function(search, buf, on_complete)
-  -- Set up pipes for stdout and stderr to capture command output
-  local stdout = vim.uv.new_pipe(false)
-  local stderr = vim.uv.new_pipe(false)
+---Stream and incrementally decode a JSON search without retaining complete stdout.
+---@param query string
+---@param handlers table { on_records?, on_complete? }
+---@param options? table { sort?, records_per_tick?, bytes_per_tick? }
+---@return table|nil request Cancellable request handle.
+function M.stream_notmuch_search(query, handlers, options)
+  options = options or {}
+  local parser = require("notmuch.search.stream").new()
+  local model = require("notmuch.search.model")
+  local seen, index = {}, 0
+  local request = {
+    cancelled = false,
+    scheduled = false,
+    stdout_done = false,
+    exited = nil,
+    stderr = "",
+    completed = false,
+  }
 
-  -- Spawn subprocess using vim.uv
-  local handle
-  handle = vim.uv.spawn(
-    "notmuch",
-    {
-      args = { "search", search },
-      stdio = { nil, stdout, stderr },
-    },
-    vim.schedule_wrap(function()
-      -- Close the pipes and handle
-      stdout:close()
-      stderr:close()
-      handle:close()
+  function request:kill(signal)
+    if self.cancelled then
+      return
+    end
+    self.cancelled = true
+    if self.process then
+      pcall(self.process.kill, self.process, signal or 15)
+    end
+  end
 
-      -- Call the completion callback
-      on_complete()
+  local function complete(result)
+    if request.completed or request.cancelled then
+      return
+    end
+    request.completed = true
+    result.stderr = request.stderr ~= "" and request.stderr or result.stderr
+    if handlers.on_complete then
+      handlers.on_complete(result)
+    end
+  end
+
+  local drain
+  local function schedule_drain()
+    if request.scheduled or request.cancelled or request.completed then
+      return
+    end
+    request.scheduled = true
+    vim.schedule(function()
+      request.scheduled = false
+      drain()
     end)
-  )
+  end
 
-  -- Helper variable for maintaining incomplete lines between reads
-  local partial_data = ""
-
-  -- Read data from stdout and write it to the buffer
-  vim.uv.read_start(
-    stdout,
-    vim.schedule_wrap(function(_, data)
-      if data then
-        -- Combine earlier incomplete chunk with newest read
-        partial_data = partial_data .. data
-        local lines = vim.split(partial_data, "\n")
-        -- collect incomplete line at the tail of lines
-        partial_data = table.remove(lines)
-
-        -- Check if buffer is still valid before writing
-        -- This prevents errors when buffer is deleted (e.g., during refresh)
-        if not vim.api.nvim_buf_is_valid(buf) then
-          handle:kill()
+  drain = function()
+    if request.cancelled or request.completed then
+      return
+    end
+    local objects, parse_error =
+      parser:drain(options.records_per_tick or 64, options.bytes_per_tick or 128 * 1024)
+    local records = {}
+    if not parse_error then
+      for _, text in ipairs(objects) do
+        index = index + 1
+        local record, err = model.decode_record(text, index, seen)
+        if not record then
+          parse_error = err
+          break
+        end
+        records[#records + 1] = record
+      end
+    end
+    if #records > 0 and handlers.on_records then
+      handlers.on_records(records)
+    end
+    if parse_error then
+      if request.process then
+        pcall(request.process.kill, request.process, 15)
+      end
+      complete({ code = -1, parse_error = parse_error })
+      return
+    end
+    if parser:has_input() then
+      schedule_drain()
+      return
+    end
+    if request.stdout_done and request.exited then
+      if request.exited.code == 0 then
+        local _, finish_error = parser:finish()
+        if finish_error then
+          complete({ code = -1, signal = request.exited.signal, parse_error = finish_error })
           return
         end
-
-        -- Paste lines into the tail of `buf`
-        vim.bo[buf].modifiable = true
-        vim.api.nvim_buf_set_lines(buf, -1, -1, false, lines)
-        vim.bo[buf].modifiable = false
       end
-    end)
-  )
+      complete(request.exited)
+    end
+  end
 
-  -- Log errors from stderr
-  vim.uv.read_start(
-    stderr,
-    vim.schedule_wrap(function(err, data)
+  local args = { "notmuch", "search", "--format=json" }
+  if options.sort then
+    args[#args + 1] = "--sort=" .. options.sort
+  end
+  args[#args + 1] = query
+  local ok, process = pcall(vim.system, args, {
+    text = true,
+    stdout = function(err, data)
+      if request.cancelled or request.completed then
+        return
+      end
       if err then
-        vim.notify("ERROR: " .. err)
-      elseif data then
-        vim.notify("ERROR: " .. data)
+        request.stderr = (request.stderr .. tostring(err)):sub(1, 8192)
       end
+      if data then
+        parser:feed(data)
+      else
+        request.stdout_done = true
+      end
+      schedule_drain()
+    end,
+    stderr = function(_, data)
+      if data and #request.stderr < 8192 then
+        request.stderr = (request.stderr .. data):sub(1, 8192)
+      end
+    end,
+  }, function(result)
+    request.exited = result
+    schedule_drain()
+  end)
+  if not ok then
+    vim.schedule(function()
+      complete({ code = -1, stderr = tostring(process) })
     end)
-  )
+    return request
+  end
+  request.process = process
+  return request
 end
 
-return a
+return M

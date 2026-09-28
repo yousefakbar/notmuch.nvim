@@ -21,32 +21,17 @@ end
 
 return {
   {
-    name = "refresh.refresh_search_buffer wipes current buffer and reruns search with selected thread",
+    name = "refresh.refresh_search_buffer delegates to structured in-place refresh",
     run = function()
-      local refresh = require("notmuch.refresh")
-      local called = {}
-      local buf = vim.api.nvim_create_buf(true, true)
-      vim.api.nvim_win_set_buf(0, buf)
-      vim.api.nvim_buf_set_name(buf, "tag:refresh-search")
-      vim.api.nvim_buf_set_lines(buf, 0, -1, false, {
-        "Hints: refresh",
-        "thread:abc123  today [1/1] subject",
-        "thread:def456  today [1/1] subject",
-      })
-      vim.api.nvim_win_set_cursor(0, { 2, 0 })
-
-      with_mock_notmuch({
-        search_terms = function(search, jumptothreadid)
-          called.search = search
-          called.jumptothreadid = jumptothreadid
-        end,
-      }, function()
-        refresh.refresh_search_buffer()
-      end)
-
-      H.eq(false, vim.api.nvim_buf_is_valid(buf))
-      H.eq("tag:refresh-search", called.search)
-      H.eq("abc123", called.jumptothreadid)
+      local search = require("notmuch.search")
+      local old = search.refresh
+      local called = false
+      search.refresh = function()
+        called = true
+      end
+      require("notmuch.refresh").refresh_search_buffer()
+      search.refresh = old
+      H.eq(true, called)
     end,
   },
   {
