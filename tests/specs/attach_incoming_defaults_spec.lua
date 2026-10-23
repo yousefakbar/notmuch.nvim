@@ -128,7 +128,7 @@ return {
       local view_rules = defaults.view_rules()
 
       H.same(
-        { "w3m", "-T", "text/html", "-dump", "$path" },
+        { "w3m", "-T", "text/html", "-dump", "-o", "display_link_number=1", "$path" },
         find_rule(view_rules, "html").commands[1]
       )
       H.same({ "lynx", "-dump", "-nolist", "$path" }, find_rule(view_rules, "html").commands[2])
