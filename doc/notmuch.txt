@@ -438,7 +438,8 @@ option will be listed with its default value.
 *attach.incoming.view.rules*
   Advanced patch table for received attachment view rules. Default rules support
   HTML, PDF, images, Office documents, Markdown, archives, text, and binary
-  fallback previews. Text previews detect their filetype with
+  fallback previews. The default w3m HTML preview lists numbered link URLs.
+  Text previews detect their filetype with
   `vim.filetype.match()` using the attachment filename and contents. Rules are
   patched with `prepend`, `append`, `replace`, and `disable`.
 
@@ -570,7 +571,8 @@ option will be listed with its default value.
   `w3m`. When enabled, the plugin will convert HTML content to plain text for
   display in the buffer. This is useful for emails that are sent as HTML-only
   or where the HTML version contains better formatting than the text/plain
-  alternative.
+  alternative. Links are numbered and their URLs are listed after the rendered
+  HTML so they can be inspected or opened manually.
 
   When disabled (the default), HTML parts are hidden with a marker indicating
   they can be viewed via the attachment interface (press 'a').

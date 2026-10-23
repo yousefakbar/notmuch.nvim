@@ -205,7 +205,10 @@ return {
       local json = {
         {
           node(msg("html", { Subject = "Html", From = "A <a@example.com>", Date = "date" }, {
-            { ["content-type"] = "text/html", content = "<b>Hello</b>" },
+            {
+              ["content-type"] = "text/html",
+              content = '<a href="https://example.invalid/path">Hello</a>',
+            },
           })),
         },
       }
@@ -223,10 +226,14 @@ return {
       end
       vim.system = function(cmd, opts)
         if cmd[1] == "w3m" then
-          H.eq("<b>Hello</b>", opts.stdin)
+          H.same({ "w3m", "-T", "text/html", "-dump", "-o", "display_link_number=1" }, cmd)
+          H.eq('<a href="https://example.invalid/path">Hello</a>', opts.stdin)
           return {
             wait = function()
-              return { code = 0, stdout = "Hello\n" }
+              return {
+                code = 0,
+                stdout = "[1]Hello\n\nReferences:\n\n[1] https://example.invalid/path\n",
+              }
             end,
           }
         end
@@ -237,7 +244,9 @@ return {
         }
       end
       local lines = thread.show_thread("fixture")
-      H.contains(lines, "Hello")
+      H.contains(lines, "[1]Hello")
+      H.contains(lines, "References:")
+      H.contains(lines, "[1] https://example.invalid/path")
 
       vim.system = function(cmd)
         if cmd[1] == "w3m" then

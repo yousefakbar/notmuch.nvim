@@ -152,7 +152,7 @@ local function render_html(raw)
   -- Run w3m to render the `raw` HTML content
   local ok, res = pcall(function()
     return vim
-      .system({ "w3m", "-T", "text/html", "-dump" }, {
+      .system({ "w3m", "-T", "text/html", "-dump", "-o", "display_link_number=1" }, {
         text = true,
         stdin = raw,
       })

@@ -120,7 +120,7 @@ function D.view_rules()
       name = "html",
       match = is_html,
       commands = {
-        { "w3m", "-T", "text/html", "-dump", "$path" },
+        { "w3m", "-T", "text/html", "-dump", "-o", "display_link_number=1", "$path" },
         { "lynx", "-dump", "-nolist", "$path" },
         { "elinks", "-dump", "-no-references", "$path" },
       },
